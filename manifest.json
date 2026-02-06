@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Contact Scanner",
+  "version": "1.2",
+  "description": "Scans pages for phone numbers and emails",
+  "permissions": ["activeTab"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
