@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Read Page Sidebar</title>
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+  <div class="sidebar-container">
+    <!-- Left Icon Strip (Always Visible) -->
+    <div class="icon-strip">
+      <div class="icon-button active" data-view="read-page" title="Read Page">📄</div>
+      <div id="extensions-container"></div>
+      <div class="icon-button add-ext-btn" title="Add Extension">+</div>
+    </div>
+
+    <!-- Right Main Content -->
+    <div class="main-content">
+      <div class="header">
+        <h3 id="content-title">Read Page</h3>
+        <div class="header-actions">
+          <button id="close" class="close-btn">×</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Read Page View -->
+        <div class="content-view active" data-view="read-page">
+          <div class="section">
+            <h4>📞 Phone Numbers</h4>
+            <ul id="phones">
+              <li>No phones found</li>
+            </ul>
+          </div>
+
+          <div class="section">
+            <h4>📧 Email Addresses</h4>
+            <ul id="emails">
+              <li>No emails found</li>
+            </ul>
+          </div>
+
+          <div class="info-box">
+            <p>💡 Data from this page will be sent to any extension you trigger below.</p>
+          </div>
+        </div>
+
+        <!-- Dynamic Extensions Views -->
+        <div id="dynamic-views-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Extension Modal -->
+  <div id="add-ext-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Extension</h2>
+        <button class="modal-close">×</button>
+      </div>
+      <form id="add-ext-form">
+        <div class="form-group">
+          <label for="ext-name">Extension Name:</label>
+          <input type="text" id="ext-name" placeholder="e.g., My Tool" required>
+        </div>
+
+        <div class="form-group">
+          <label for="ext-icon">Icon (emoji or text):</label>
+          <input type="text" id="ext-icon" placeholder="e.g., 🔧" maxlength="3" value="🔆" required>
+        </div>
+
+        <div class="form-group">
+          <label for="ext-webhook">Webhook URL:</label>
+          <input type="url" id="ext-webhook" placeholder="https://example.com/webhook" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Add Extension</button>
+          <button type="button" class="btn-secondary modal-close">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Delete Extension</h2>
+        <button class="modal-close">×</button>
+      </div>
+      <p id="delete-message" style="padding: 20px; text-align: center; color: #666;">Are you sure?</p>
+      <div class="form-actions" style="padding: 0 20px 20px;">
+        <button id="confirm-delete" class="btn-primary">Delete</button>
+        <button type="button" class="btn-secondary modal-close">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="sidebar.js"></script>
+</body>
+</html>
