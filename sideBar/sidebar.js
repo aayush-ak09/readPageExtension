@@ -1,6 +1,8 @@
 // Storage key for extensions
 const EXTENSIONS_STORAGE_KEY = "readPageExtensions";
 let tempExtDeleteId = null;
+// last extracted page data cached so extension views can read counts even when read-page view is hidden
+let lastPageData = { phones: [], emails: [], pageUrl: '' };
 
 // Load metadata when sidebar loads
 document.addEventListener("DOMContentLoaded", () => {
@@ -13,10 +15,14 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Load extensions from chrome storage and render them
-function loadExtensionsFromStorage() {
+function loadExtensionsFromStorage(callback) {
   chrome.storage.local.get([EXTENSIONS_STORAGE_KEY], (result) => {
     const extensions = result[EXTENSIONS_STORAGE_KEY] || [];
     renderExtensionIcons(extensions);
+    // Call optional callback after rendering
+    if (callback && typeof callback === 'function') {
+      callback();
+    }
   });
 }
 
@@ -24,88 +30,166 @@ function loadExtensionsFromStorage() {
 function renderExtensionIcons(extensions) {
   const container = document.getElementById("extensions-container");
   const viewsContainer = document.getElementById("dynamic-views-container");
-  
+
   container.innerHTML = "";
   viewsContainer.innerHTML = "";
-  
-  extensions.forEach((ext) => {
-    // Create icon button
-    const btn = document.createElement("div");
-    btn.className = "icon-button";
-    btn.setAttribute("data-view", ext.id);
-    btn.setAttribute("title", ext.name);
-    btn.textContent = ext.icon;
-    
-    btn.addEventListener("click", () => switchView(ext.id, ext.name));
-    container.appendChild(btn);
-    
-    // Create content view with improved UI
-    const view = document.createElement("div");
-    view.className = "content-view";
-    view.setAttribute("data-view", ext.id);
-    view.innerHTML = `
-      <div class="ext-card">
-        <div class="ext-header">
-          <div class="ext-title">
-            <span class="ext-icon-large">${ext.icon}</span>
-            <span>${ext.name}</span>
+
+  // Render each extension into its own content view (previous look)
+    extensions.forEach((ext) => {
+      // Create icon button
+      const btn = document.createElement("div");
+      btn.className = "icon-button";
+      btn.setAttribute("data-view", ext.id);
+      btn.setAttribute("title", ext.name);
+      btn.textContent = ext.icon;
+      btn.addEventListener("click", () => switchView(ext.id, ext.name));
+      container.appendChild(btn);
+
+      // Create content view (one per extension)
+      const view = document.createElement("div");
+      view.className = "content-view";
+      view.setAttribute("data-view", ext.id);
+      view.innerHTML = `
+        <div class="ext-card">
+          <div class="ext-header">
+            <div class="ext-title">
+              <span class="ext-icon-large">${ext.icon}</span>
+              <span>${ext.name}</span>
+            </div>
+            <button class="ext-delete-btn" data-ext-id="${ext.id}" data-ext-name="${ext.name}">🗑️</button>
           </div>
-          <button class="ext-delete-btn" data-ext-id="${ext.id}" data-ext-name="${ext.name}">🗑️</button>
+
+          <div class="section">
+            <h4>Variables</h4>
+            <ul class="var-list-vertical">
+              <li><label><input type="checkbox" class="var-checkbox" data-var="pageUrl" checked> Page URL</label></li>
+              <li><label><input type="checkbox" class="var-checkbox" data-var="phones" checked> Phones (<span class="count phones-count" data-ext-id="${ext.id}">0</span>)</label></li>
+              <li><label><input type="checkbox" class="var-checkbox" data-var="emails" checked> Emails (<span class="count emails-count" data-ext-id="${ext.id}">0</span>)</label></li>
+              <li><label><input type="checkbox" class="var-checkbox" data-var="phoneCount" checked> Phone Count</label></li>
+              <li><label><input type="checkbox" class="var-checkbox" data-var="emailCount" checked> Email Count</label></li>
+              <li><label><input type="checkbox" class="var-checkbox" data-var="timestamps"> Timestamps</label></li>
+              <li><label><input type="checkbox" class="var-checkbox" data-var="description"> Description (Optional)</label></li>
+            </ul>
+          </div>
+
+          <div class="section description-section hidden" id="desc-section-${ext.id}">
+            <label for="desc-input-${ext.id}" class="section-label">📝 Description:</label>
+            <textarea id="desc-input-${ext.id}" class="description-input" placeholder="Enter description for this action (optional - e.g., 'Lead generation inquiry', 'Customer support', etc.)" maxlength="500"></textarea>
+            <span class="char-count"><span id="char-count-${ext.id}">0</span>/500</span>
+          </div>
+
+          <button class="payload-toggle" data-ext-id="${ext.id}">View payload...</button>
+          <div class="payload-preview hidden" id="preview-${ext.id}"></div>
+
+          <button class="ext-trigger-btn" data-ext-id="${ext.id}">📤 Send Data to ${ext.name}</button>
+          <div class="trigger-status" id="status-${ext.id}"></div>
         </div>
-        
-        <div class="ext-details">
-          <strong>🔗 Webhook URL:</strong>
-          ${ext.webhook}
-        </div>
-        
-        <button class="ext-trigger-btn" data-ext-id="${ext.id}">
-          📤 Send Data to ${ext.name}
-        </button>
-        
-        <div class="trigger-status" id="status-${ext.id}"></div>
-      </div>
-    `;
-    viewsContainer.appendChild(view);
-  });
-  
-  // Add event listeners to delete buttons
-  document.querySelectorAll(".ext-delete-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      const extId = btn.getAttribute("data-ext-id");
-      const extName = btn.getAttribute("data-ext-name");
-      openDeleteModal(extId, extName);
+      `;
+
+      viewsContainer.appendChild(view);
     });
-  });
-  
-  // Add event listeners to trigger buttons
-  document.querySelectorAll(".ext-trigger-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      const extId = btn.getAttribute("data-ext-id");
-      triggerWebhook(extId);
+
+      // activate first extension view by default when extensions exist
+      if (extensions.length > 0) {
+        const first = extensions[0];
+        switchView(first.id, first.name);
+      } else {
+        switchView('read-page', 'Read Page');
+      }
+
+    // Attach listeners
+    document.querySelectorAll(".ext-delete-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const extId = btn.getAttribute("data-ext-id");
+        const extName = btn.getAttribute("data-ext-name");
+        openDeleteModal(extId, extName);
+      });
     });
-  });
+
+    document.querySelectorAll(".ext-trigger-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const extId = btn.getAttribute("data-ext-id");
+        triggerWebhook(extId);
+      });
+    });
+
+    // Update preview when checkboxes change and initialize counts
+    document.querySelectorAll('.var-checkbox').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const viewEl = cb.closest('.content-view');
+        if (!viewEl) return;
+        const id = viewEl.getAttribute('data-view');
+        
+        // Toggle description section visibility if description checkbox changed
+        if (cb.getAttribute('data-var') === 'description') {
+          const descSection = document.getElementById(`desc-section-${id}`);
+          if (descSection) {
+            if (cb.checked) {
+              descSection.classList.remove('hidden');
+            } else {
+              descSection.classList.add('hidden');
+            }
+          }
+        }
+        
+        updatePreviewForExtension(id);
+      });
+    });
+
+    // Add character counter for description inputs
+    document.querySelectorAll('.description-input').forEach(textarea => {
+      const extId = textarea.id.replace('desc-input-', '');
+      const charCountEl = document.getElementById(`char-count-${extId}`);
+      textarea.addEventListener('input', (e) => {
+        if (charCountEl) charCountEl.textContent = e.target.value.length;
+        const viewEl = textarea.closest('.content-view');
+        if (!viewEl) return;
+        const id = viewEl.getAttribute('data-view');
+        updatePreviewForExtension(id);
+      });
+    });
+
+    // Payload toggle buttons: show/hide preview
+    document.querySelectorAll('.payload-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const extId = btn.getAttribute('data-ext-id');
+        const preview = document.getElementById(`preview-${extId}`);
+        if (!preview) return;
+        const isHidden = preview.classList.toggle('hidden');
+        if (!isHidden) {
+          // now visible -> update content
+          updatePreviewForExtension(extId);
+          btn.textContent = 'Hide payload...';
+        } else {
+          btn.textContent = 'View payload...';
+        }
+      });
+    });
+
+    document.querySelectorAll('.content-view').forEach(view => {
+      const id = view.getAttribute('data-view');
+      updatePreviewForExtension(id);
+    });
 }
 
-// Add extension modal functionality
+// Add extension inline form functionality
 function setupAddExtensionModal() {
-  const modal = document.getElementById("add-ext-modal");
   const form = document.getElementById("add-ext-form");
   const addBtn = document.querySelector(".add-ext-btn");
-  const closeButtons = document.querySelectorAll(".modal-close");
+  const cancelBtn = document.getElementById("cancel-add-ext");
+  const nameInput = document.getElementById("ext-name");
+  const iconInput = document.getElementById("ext-icon");
   
   addBtn.addEventListener("click", () => {
-    modal.classList.remove("hidden");
+    switchView("add-extension", "Add New Extension");
   });
   
-  closeButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const parentModal = btn.closest(".modal");
-      if (parentModal) {
-        parentModal.classList.add("hidden");
-      }
-    });
+  cancelBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    form.reset();
+    switchView("read-page", "Read Page");
   });
   
   form.addEventListener("submit", (e) => {
@@ -113,12 +197,19 @@ function setupAddExtensionModal() {
     addNewExtension();
   });
   
-  // Close modal when clicking outside
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) {
-      modal.classList.add("hidden");
-    }
-  });
+  // Auto-generate label from extension name
+  if (nameInput && iconInput) {
+    nameInput.addEventListener('input', (e) => {
+      const name = e.target.value.trim();
+      if (name.length >= 2) {
+        // Get first two letters and convert to uppercase
+        const abbreviation = name.substring(0, 2).toUpperCase();
+        iconInput.value = abbreviation;
+      } else if (name.length === 1) {
+        iconInput.value = name.toUpperCase();
+      }
+    });
+  }
 }
 
 // Delete modal setup
@@ -181,12 +272,13 @@ function addNewExtension() {
     chrome.storage.local.set({ [EXTENSIONS_STORAGE_KEY]: extensions }, () => {
       console.log("Extension added:", newExt);
       
-      // Reset form and close modal
+      // Reset form
       document.getElementById("add-ext-form").reset();
-      document.getElementById("add-ext-modal").classList.add("hidden");
       
-      // Reload extensions
-      loadExtensionsFromStorage();
+      // Reload extensions and switch to the new extension view
+      loadExtensionsFromStorage(() => {
+        switchView(newExt.id, newExt.name);
+      });
       setupIconNavigation();
     });
   });
@@ -208,31 +300,39 @@ function deleteExtension(extId) {
 
 // Get temporary data stored from page
 function getTemporaryData() {
-  const phones = [];
-  const emails = [];
-  
+  // Prefer reading the visible lists in the read-page view; if they are not present
+  // (because the user is viewing an extension panel), fall back to the cached
+  // `lastPageData` from the most recent `loadSidebarData` call.
   const phoneList = document.getElementById("phones");
   const emailList = document.getElementById("emails");
-  
-  if (phoneList) {
-    phoneList.querySelectorAll("li").forEach(li => {
-      const text = li.textContent.trim();
-      if (text && text !== "No phones found") {
-        phones.push(text);
-      }
-    });
+
+  if (phoneList || emailList) {
+    const phones = [];
+    const emails = [];
+
+    if (phoneList) {
+      phoneList.querySelectorAll("li").forEach(li => {
+        const text = li.textContent.trim();
+        if (text && text !== "No phones found") phones.push(text);
+      });
+    }
+
+    if (emailList) {
+      emailList.querySelectorAll("li").forEach(li => {
+        const text = li.textContent.trim();
+        if (text && text !== "No emails found") emails.push(text);
+      });
+    }
+
+    return { phones, emails, pageUrl: lastPageData.pageUrl };
   }
-  
-  if (emailList) {
-    emailList.querySelectorAll("li").forEach(li => {
-      const text = li.textContent.trim();
-      if (text && text !== "No emails found") {
-        emails.push(text);
-      }
-    });
-  }
-  
-  return { phones, emails };
+
+  // fallback to cached data
+  return {
+    phones: Array.isArray(lastPageData.phones) ? lastPageData.phones : [],
+    emails: Array.isArray(lastPageData.emails) ? lastPageData.emails : [],
+    pageUrl: lastPageData.pageUrl || ''
+  };
 }
 
 // Create payload and send to webhook
@@ -240,40 +340,57 @@ async function triggerWebhook(extId) {
   chrome.storage.local.get([EXTENSIONS_STORAGE_KEY], async (result) => {
     const extensions = result[EXTENSIONS_STORAGE_KEY] || [];
     const extension = extensions.find(e => e.id === extId);
-    
+
     if (!extension) {
       showStatus(extId, "error", "Extension not found");
       return;
     }
-    
+
     // Get data
-    const data = getTemporaryData();
-    
-    // Create payload
+    const temp = getTemporaryData();
+
+    // Read selected vars from the extension's content view checkboxes
+    const view = document.querySelector(`.content-view[data-view="${extId}"]`);
+    const checkedVars = {};
+    if (view) {
+      view.querySelectorAll('.var-checkbox').forEach(cb => {
+        checkedVars[cb.getAttribute('data-var')] = cb.checked;
+      });
+    }
+
+    const dataObj = {};
+    if (checkedVars.pageUrl) dataObj.pageUrl = window.location.href;
+    if (checkedVars.timestamps) dataObj.timestamps = new Date().toISOString();
+    if (checkedVars.phones) dataObj.phones = temp.phones;
+    if (checkedVars.emails) dataObj.emails = temp.emails;
+    if (checkedVars.phoneCount) dataObj.phoneCount = temp.phones.length;
+    if (checkedVars.emailCount) dataObj.emailCount = temp.emails.length;
+    if (checkedVars.description) {
+      const descInput = document.getElementById(`desc-input-${extId}`);
+      const description = descInput ? descInput.value.trim() : '';
+      if (description) dataObj.description = description;
+    }
+
     const payload = {
       extensionId: extension.id,
       extensionName: extension.name,
       extensionIcon: extension.icon,
-      timestamp: new Date().toISOString(),
+      sentAt: new Date().toISOString(),
       pageUrl: window.location.href,
-      data: {
-        phones: data.phones,
-        emails: data.emails,
-        phoneCount: data.phones.length,
-        emailCount: data.emails.length
-      }
+      data: dataObj
     };
-    
+
+    // update preview
+    const previewEl = document.getElementById(`preview-${extId}`);
+    if (previewEl) previewEl.textContent = JSON.stringify(payload, null, 2);
+
     try {
-      // Send to webhook
       const response = await fetch(extension.webhook, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      
+
       if (response.ok) {
         showStatus(extId, "success", "✅ Data sent successfully!");
       } else {
@@ -284,6 +401,45 @@ async function triggerWebhook(extId) {
       console.error("Webhook error:", error);
     }
   });
+}
+
+// Build and update preview for an extension from its selected checkboxes
+function updatePreviewForExtension(extId) {
+  const view = document.querySelector(`.content-view[data-view="${extId}"]`);
+  if (!view) return;
+  const temp = getTemporaryData();
+  const checkedVars = {};
+  view.querySelectorAll('.var-checkbox').forEach(cb => {
+    checkedVars[cb.getAttribute('data-var')] = cb.checked;
+  });
+
+  const dataObj = {};
+  if (checkedVars.pageUrl) dataObj.pageUrl = window.location.href;
+  if (checkedVars.timestamps) dataObj.timestamps = new Date().toISOString();
+  if (checkedVars.phones) dataObj.phones = temp.phones;
+  if (checkedVars.emails) dataObj.emails = temp.emails;
+  if (checkedVars.phoneCount) dataObj.phoneCount = temp.phones.length;
+  if (checkedVars.emailCount) dataObj.emailCount = temp.emails.length;
+  if (checkedVars.description) {
+    const descInput = document.getElementById(`desc-input-${extId}`);
+    const description = descInput ? descInput.value.trim() : '';
+    if (description) dataObj.description = description;
+  }
+
+  const preview = {
+    extensionId: extId,
+    previewedAt: new Date().toISOString(),
+    pageUrl: window.location.href,
+    data: dataObj
+  };
+
+  const previewEl = document.getElementById(`preview-${extId}`);
+  if (previewEl) previewEl.textContent = JSON.stringify(preview, null, 2);
+  // update counts in the view (if present)
+  const phonesCountEl = view.querySelector(`.phones-count[data-ext-id="${extId}"]`) || document.querySelector(`.phones-count[data-ext-id="${extId}"]`);
+  const emailsCountEl = view.querySelector(`.emails-count[data-ext-id="${extId}"]`) || document.querySelector(`.emails-count[data-ext-id="${extId}"]`);
+  if (phonesCountEl) phonesCountEl.textContent = (temp.phones || []).length;
+  if (emailsCountEl) emailsCountEl.textContent = (temp.emails || []).length;
 }
 
 // Show trigger status
@@ -381,11 +537,18 @@ function loadSidebarData() {
         }
 
         if (!response) {
-          displayEmptyState();
+              displayEmptyState();
           return;
         }
+            // cache latest page data so extension views can read counts even when read-page view is hidden
+            lastPageData = response || { phones: [], emails: [], pageUrl: '' };
+            displayData(response);
 
-        displayData(response);
+            // update previews/counts for all extension views that have a preview element
+            document.querySelectorAll('[id^="preview-"]').forEach(el => {
+              const extId = el.id.replace('preview-', '');
+              try { updatePreviewForExtension(extId); } catch (e) { /* ignore */ }
+            });
       }
     );
   } catch (error) {

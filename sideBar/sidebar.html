@@ -12,7 +12,7 @@
     <div class="icon-strip">
       <div class="icon-button active" data-view="read-page" title="Read Page">📄</div>
       <div id="extensions-container"></div>
-      <div class="icon-button add-ext-btn" title="Add Extension">+</div>
+      <div class="icon-button add-ext-btn" data-view="add-extension" title="Add Extension">+</div>
     </div>
 
     <!-- Right Main Content -->
@@ -46,13 +46,48 @@
           </div>
         </div>
 
+        <!-- Add Extension View -->
+        <div class="content-view" data-view="add-extension">
+          <div class="ext-card">
+            <div class="ext-header">
+              <div class="ext-title">
+                <span class="ext-icon-large">➕</span>
+                <span>Add New Extension</span>
+              </div>
+            </div>
+
+            <form id="add-ext-form">
+              <div class="form-group">
+                <label for="ext-name">Extension Name:</label>
+                <input type="text" id="ext-name" placeholder="e.g., My Tool" required>
+              </div>
+
+              <div class="form-group">
+                <label for="ext-icon">Label (Short Name):</label>
+                <input type="text" id="ext-icon" placeholder="Auto-generated from name" maxlength="3" required>
+                <small style="color: #999; margin-top: 4px; display: block;">Auto-generated from extension name (editable)</small>
+              </div>
+
+              <div class="form-group">
+                <label for="ext-webhook">Webhook URL:</label>
+                <input type="url" id="ext-webhook" placeholder="https://example.com/webhook" required>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">Add Extension</button>
+                <button type="button" class="btn-secondary" id="cancel-add-ext">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
         <!-- Dynamic Extensions Views -->
         <div id="dynamic-views-container"></div>
       </div>
     </div>
   </div>
 
-  <!-- Add Extension Modal -->
+  <!-- Add Extension Modal (hidden, kept for backup) -->
   <div id="add-ext-modal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">

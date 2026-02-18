@@ -30,7 +30,11 @@ body {
   border-right: 1px solid #1a1a1a;
 }
 
+/* Keep icon strip visible while content scrolls */
+.icon-strip { position: sticky; top: 0; height: 100vh; z-index: 2000; }
+
 .icon-button {
+  margin-top: 5px;
   width: 48px;
   height: 48px;
   display: flex;
@@ -74,6 +78,9 @@ body {
   border-bottom: 1px solid #d4927a;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+
+/* Keep header (and close button) visible when scrolling */
+.header { position: sticky; top: 0; z-index: 2000; }
 
 .header h3 {
   margin: 0;
@@ -210,6 +217,66 @@ body {
   margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
+
+/* List view styles for extensions */
+.ext-list-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.ext-list-left {
+  width: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ext-list-body {
+  flex: 1;
+}
+
+.ext-list-header { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.ext-name { font-weight:600; color:#2c3e50; }
+.ext-actions { display:flex; gap:8px; }
+.ext-details { color:#666; font-size:13px; margin-top:6px; word-break:break-all; }
+.ext-variables { margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; }
+.ext-variables label { font-size:12px; color:#444; }
+.payload-preview { 
+  margin-top:8px; 
+  padding:8px; 
+  background:#fafafa; 
+  border-radius:6px; 
+  border:1px solid #eee; 
+  font-size:12px; 
+  color:#333; 
+  white-space:pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Hidden preview until user chooses to view it */
+.payload-preview.hidden { display: none; }
+
+.payload-toggle { margin-top:10px; background: transparent; border: none; color: #2042da; cursor: pointer; font-size: 13px; }
+.payload-toggle:hover { color: #333; }
+
+.ext-list-item.highlight { box-shadow: 0 6px 20px rgba(232,167,106,0.18); transform:translateY(-2px); }
+
+/* vertical variable list used in per-extension view */
+.var-list-vertical { list-style:none; margin:0; padding:0; display:block; }
+.var-list-vertical li { padding:8px 0; border-bottom:1px solid #f2f2f2; }
+.var-list-vertical li:last-child { border-bottom: none; }
+.var-list-vertical label { display:flex; align-items:center; gap:8px; font-size:13px; }
+.count { font-weight:600; color:#2c3e50; margin-left:6px; }
 
 .ext-header {
   display: flex;
@@ -480,4 +547,48 @@ body {
 
 #extensions-container::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Description Input Styling */
+.description-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  max-height: 150px;
+  transition: border-color 0.2s ease;
+}
+
+.description-input:focus {
+  outline: none;
+  border-color: #e8a76a;
+  box-shadow: 0 0 0 3px rgba(232, 167, 106, 0.1);
+}
+
+.description-input::placeholder {
+  color: #999;
+}
+
+.section-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.char-count {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #999;
+  text-align: right;
+}
+
+.description-section.hidden {
+  display: none;
 }
