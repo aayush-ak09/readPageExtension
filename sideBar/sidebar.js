@@ -27,7 +27,7 @@ function loadExtensionsFromStorage(callback) {
   });
 }
 
-// Render extension icons dynamically
+//#region Render extension
 function renderExtensionIcons(extensions) {
   const container = document.getElementById("extensions-container");
   const viewsContainer = document.getElementById("dynamic-views-container");
@@ -80,8 +80,31 @@ function renderExtensionIcons(extensions) {
           <h4>Variables</h4>
           <ul class="var-list-vertical">
             <li><label><input type="checkbox" class="var-checkbox" data-var="pageUrl" checked> Page URL</label></li>
-            <li><label><input type="checkbox" class="var-checkbox" data-var="phones" checked> Phones (<span class="count phones-count" data-ext-id="${ext.id}">0</span>)</label></li>
-            <li><label><input type="checkbox" class="var-checkbox" data-var="emails" checked> Emails (<span class="count emails-count" data-ext-id="${ext.id}">0</span>)</label></li>
+            <li class="var-group">
+              <div class="var-header">
+               <label>
+                 <input type="checkbox" class="var-checkbox" data-var="phones" checked>Phones (<span class="count phones-count" data-ext-id="${ext.id}">0</span>)
+               </label>
+              
+                <button type="button" class="dropdown-toggle" data-type="phones" data-ext-id="${ext.id}">⌄</button>
+             </div>
+
+             <div class="dropdown-list hidden"id="phones-dropdown-${ext.id}"></div>
+            </li>
+            
+            <li class="var-group">
+              <div class="var-header">
+                <label>
+                  <input type="checkbox" class="var-checkbox" data-var="emails" checked>
+                  Emails (<span class="count emails-count" data-ext-id="${ext.id}">0</span>)
+                </label>
+
+                <button type="button"class="dropdown-toggle"data-type="emails"data-ext-id="${ext.id}">⌄</button>
+              </div>
+
+              <div class="dropdown-list hidden" id="emails-dropdown-${ext.id}"></div>
+            </li>
+            
             <li><label><input type="checkbox" class="var-checkbox" data-var="phoneCount" checked> Phone Count</label></li>
             <li><label><input type="checkbox" class="var-checkbox" data-var="emailCount" checked> Email Count</label></li>
             <li><label><input type="checkbox" class="var-checkbox" data-var="timestamps"> Timestamps</label></li>
@@ -100,19 +123,16 @@ function renderExtensionIcons(extensions) {
           </span>
         </div>
 
-        <button class="payload-toggle" data-ext-id="${ext.id}">
-          View payload...
-        </button>
-
-        <div class="payload-preview hidden" id="preview-${ext.id}"></div>
-
-        <button class="ext-trigger-btn" data-ext-id="${ext.id}">
-          📤 Send Data to ${ext.name}
-        </button>
-
-        <div class="trigger-status" id="status-${ext.id}"></div>
-
-      </div>
+          <div class="ext-bottom-actions">
+              <button class="payload-toggle" data-ext-id="${ext.id}">View payload...</button>
+              
+              <div class="payload-preview hidden" id="preview-${ext.id}"></div>
+      
+              <button class="ext-trigger-btn" data-ext-id="${ext.id}">📤 Send Data to ${ext.name}</button>
+      
+              <div class="trigger-status"></div>
+          </div>
+       </div>
     `;
 
     viewsContainer.appendChild(view);
@@ -152,6 +172,7 @@ function renderExtensionIcons(extensions) {
   document.querySelectorAll(".ext-trigger-btn").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
+      console.warn("Triggering webhook for extension ID:", btn.getAttribute("data-ext-id"));
       const extId = btn.getAttribute("data-ext-id");
       triggerWebhook(extId);
     });
@@ -176,6 +197,15 @@ function renderExtensionIcons(extensions) {
     });
   });
 
+  document.querySelectorAll('.dropdown-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const viewEl = btn.closest('.content-view');
+      const extId = viewEl.getAttribute('data-view');
+      const type = btn.getAttribute('data-type');
+      const dropdown = document.getElementById(`${type}-dropdown-${extId}`);
+      dropdown.classList.toggle('hidden');
+    });
+  });
   document.querySelectorAll('.description-input').forEach(textarea => {
     const extId = textarea.id.replace('desc-input-', '');
     const charCountEl = document.getElementById(`char-count-${extId}`);
@@ -475,8 +505,21 @@ async function triggerWebhook(extId) {
     const dataObj = {};
     if (checkedVars.pageUrl) dataObj.pageUrl = window.location.href;
     if (checkedVars.timestamps) dataObj.timestamps = new Date().toISOString();
-    if (checkedVars.phones) dataObj.phones = temp.phones;
-    if (checkedVars.emails) dataObj.emails = temp.emails;
+    if (checkedVars.phones) {
+      const selectedPhones = [];
+      view.querySelectorAll('.phone-item:checked').forEach(cb => {
+        selectedPhones.push(cb.value);
+      });
+      dataObj.phones = selectedPhones;
+    }
+
+    if (checkedVars.emails) {
+      const selectedEmails = [];
+      view.querySelectorAll('.email-item:checked').forEach(cb => {
+        selectedEmails.push(cb.value);
+      });
+      dataObj.emails = selectedEmails;
+    }
     if (checkedVars.phoneCount) dataObj.phoneCount = temp.phones.length;
     if (checkedVars.emailCount) dataObj.emailCount = temp.emails.length;
     if (checkedVars.description) {
@@ -519,27 +562,149 @@ async function triggerWebhook(extId) {
 
 // Build and update preview for an extension from its selected checkboxes
 function updatePreviewForExtension(extId) {
+
   const view = document.querySelector(`.content-view[data-view="${extId}"]`);
   if (!view) return;
+
   const temp = getTemporaryData();
+
   const checkedVars = {};
   view.querySelectorAll('.var-checkbox').forEach(cb => {
     checkedVars[cb.getAttribute('data-var')] = cb.checked;
   });
+  /* =========================================
+    Populate Phones Dropdown (Only Once)
+ ========================================= */
+  const phonesDropdown = document.getElementById(`phones-dropdown-${extId}`);
+  if (phonesDropdown && phonesDropdown.dataset.initialized !== "true" && temp.phones && temp.phones.length > 0) {
 
+    phonesDropdown.dataset.initialized = "true";
+    phonesDropdown.innerHTML = "";
+
+    // Controls
+    const controls = document.createElement("div");
+    controls.className = "dropdown-controls";
+    controls.innerHTML = `
+    <button type="button" class="select-all-phones">Select All</button>
+    <button type="button" class="deselect-all-phones">Deselect All</button>
+  `;
+    phonesDropdown.appendChild(controls);
+
+    // Items
+    temp.phones.forEach(phone => {
+      const label = document.createElement("label");
+      label.innerHTML = `
+      <input type="checkbox" class="phone-item" value="${phone}" checked>
+      ${phone}
+    `;
+      phonesDropdown.appendChild(label);
+    });
+
+    // Select All
+    controls.querySelector('.select-all-phones').addEventListener('click', () => {
+      phonesDropdown.querySelectorAll('.phone-item').forEach(cb => cb.checked = true);
+      updatePreviewForExtension(extId);
+    });
+
+    // Deselect All
+    controls.querySelector('.deselect-all-phones').addEventListener('click', () => {
+      phonesDropdown.querySelectorAll('.phone-item').forEach(cb => cb.checked = false);
+      updatePreviewForExtension(extId);
+    });
+
+    // Individual checkbox change
+    phonesDropdown.addEventListener('change', (e) => {
+      if (e.target.classList.contains('phone-item')) {
+        updatePreviewForExtension(extId);
+      }
+    });
+  }
+  /* =========================================
+    Populate Emails Dropdown (Only Once)
+ ========================================= */
+  const emailsDropdown = document.getElementById(`emails-dropdown-${extId}`);
+
+  if (emailsDropdown && emailsDropdown.dataset.initialized !== "true" && temp.emails && temp.emails.length > 0) {
+
+    emailsDropdown.dataset.initialized = "true";
+    emailsDropdown.innerHTML = "";
+
+    const controls = document.createElement("div");
+    controls.className = "dropdown-controls";
+    controls.innerHTML = `
+    <button type="button" class="select-all-emails">Select All</button>
+    <button type="button" class="deselect-all-emails">Deselect All</button>
+  `;
+    emailsDropdown.appendChild(controls);
+
+    temp.emails.forEach(email => {
+      const label = document.createElement("label");
+      label.innerHTML = `
+      <input type="checkbox" class="email-item" value="${email}" checked>
+      ${email}
+    `;
+      emailsDropdown.appendChild(label);
+    });
+
+    controls.querySelector('.select-all-emails').addEventListener('click', () => {
+      emailsDropdown.querySelectorAll('.email-item').forEach(cb => cb.checked = true);
+      updatePreviewForExtension(extId);
+    });
+
+    controls.querySelector('.deselect-all-emails').addEventListener('click', () => {
+      emailsDropdown.querySelectorAll('.email-item').forEach(cb => cb.checked = false);
+      updatePreviewForExtension(extId);
+    });
+
+    emailsDropdown.addEventListener('change', (e) => {
+      if (e.target.classList.contains('email-item')) {
+        updatePreviewForExtension(extId);
+      }
+    });
+  }
+  /* =========================================
+     Build Payload Data (Using Selected Items)
+  ========================================= */
   const dataObj = {};
-  if (checkedVars.pageUrl) dataObj.pageUrl = window.location.href;
-  if (checkedVars.timestamps) dataObj.timestamps = new Date().toISOString();
-  if (checkedVars.phones) dataObj.phones = temp.phones;
-  if (checkedVars.emails) dataObj.emails = temp.emails;
-  if (checkedVars.phoneCount) dataObj.phoneCount = temp.phones.length;
-  if (checkedVars.emailCount) dataObj.emailCount = temp.emails.length;
+
+  if (checkedVars.pageUrl)
+    dataObj.pageUrl = window.location.href;
+
+  if (checkedVars.timestamps)
+    dataObj.timestamps = new Date().toISOString();
+
+  if (checkedVars.phones) {
+    const selectedPhones = [];
+    view.querySelectorAll('.phone-item:checked').forEach(cb => {
+      selectedPhones.push(cb.value);
+    });
+    dataObj.phones = selectedPhones;
+  }
+
+  if (checkedVars.emails) {
+    const selectedEmails = [];
+    view.querySelectorAll('.email-item:checked').forEach(cb => {
+      selectedEmails.push(cb.value);
+    });
+    dataObj.emails = selectedEmails;
+  }
+
+  if (checkedVars.phoneCount)
+    dataObj.phoneCount = (dataObj.phones || temp.phones).length;
+
+  if (checkedVars.emailCount)
+    dataObj.emailCount = (dataObj.emails || temp.emails).length;
+
   if (checkedVars.description) {
     const descInput = document.getElementById(`desc-input-${extId}`);
     const description = descInput ? descInput.value.trim() : '';
-    if (description) dataObj.description = description;
+    if (description)
+      dataObj.description = description;
   }
 
+  /* =========================================
+     Preview Object
+  ========================================= */
   const preview = {
     extensionId: extId,
     previewedAt: new Date().toISOString(),
@@ -548,14 +713,21 @@ function updatePreviewForExtension(extId) {
   };
 
   const previewEl = document.getElementById(`preview-${extId}`);
-  if (previewEl) previewEl.textContent = JSON.stringify(preview, null, 2);
-  // update counts in the view (if present)
-  const phonesCountEl = view.querySelector(`.phones-count[data-ext-id="${extId}"]`) || document.querySelector(`.phones-count[data-ext-id="${extId}"]`);
-  const emailsCountEl = view.querySelector(`.emails-count[data-ext-id="${extId}"]`) || document.querySelector(`.emails-count[data-ext-id="${extId}"]`);
-  if (phonesCountEl) phonesCountEl.textContent = (temp.phones || []).length;
-  if (emailsCountEl) emailsCountEl.textContent = (temp.emails || []).length;
-}
+  if (previewEl)
+    previewEl.textContent = JSON.stringify(preview, null, 2);
 
+  /* =========================================
+     Update Counts
+  ========================================= */
+  const phonesCountEl = view.querySelector(`.phones-count[data-ext-id="${extId}"]`);
+  const emailsCountEl = view.querySelector(`.emails-count[data-ext-id="${extId}"]`);
+
+  if (phonesCountEl)
+    phonesCountEl.textContent = temp.phones.length;
+
+  if (emailsCountEl)
+    emailsCountEl.textContent = temp.emails.length;
+}
 // Show trigger status
 function showStatus(extId, type, message) {
   const statusEl = document.getElementById(`status-${extId}`);

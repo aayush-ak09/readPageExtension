@@ -31,7 +31,12 @@ body {
 }
 
 /* Keep icon strip visible while content scrolls */
-.icon-strip { position: sticky; top: 0; height: 100vh; z-index: 2000; }
+.icon-strip {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 2000;
+}
 
 .icon-button {
   margin-top: 5px;
@@ -80,7 +85,11 @@ body {
 }
 
 /* Keep header (and close button) visible when scrolling */
-.header { position: sticky; top: 0; z-index: 2000; }
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+}
 
 .header h3 {
   margin: 0;
@@ -119,7 +128,10 @@ body {
 /* Content Area */
 .content {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* IMPORTANT */
   padding: 20px;
 }
 
@@ -162,20 +174,22 @@ body {
   margin-bottom: 0;
 }
 
-/* Content Views */
 .content-view {
   display: none;
-  animation: fadeIn 0.3s ease;
+  flex-direction: column;
+  height: 100%;
 }
 
 .content-view.active {
-  display: block;
+  display: flex;
+  overflow-y: auto;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -214,8 +228,16 @@ body {
   background: white;
   border-radius: 8px;
   padding: 20px;
-  margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.ext-bottom-actions {
+  margin-top: auto;
+  padding-top: 20px;
 }
 
 /* List view styles for extensions */
@@ -227,7 +249,7 @@ body {
   background: #fff;
   border-radius: 8px;
   margin-bottom: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .ext-list-left {
@@ -241,21 +263,51 @@ body {
   flex: 1;
 }
 
-.ext-list-header { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-.ext-name { font-weight:600; color:#2c3e50; }
-.ext-actions { display:flex; gap:8px; }
-.ext-details { color:#666; font-size:13px; margin-top:6px; word-break:break-all; }
-.ext-variables { margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; }
-.ext-variables label { font-size:12px; color:#444; }
-.payload-preview { 
-  margin-top:8px; 
-  padding:8px; 
-  background:#fafafa; 
-  border-radius:6px; 
-  border:1px solid #eee; 
-  font-size:12px; 
-  color:#333; 
-  white-space:pre-wrap;
+.ext-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.ext-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.ext-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ext-details {
+  color: #666;
+  font-size: 13px;
+  margin-top: 6px;
+  word-break: break-all;
+}
+
+.ext-variables {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ext-variables label {
+  font-size: 12px;
+  color: #444;
+}
+
+.payload-preview {
+  margin-top: 8px;
+  padding: 8px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #eee;
+  font-size: 12px;
+  color: #333;
+  white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: break-word;
   max-width: 100%;
@@ -264,19 +316,57 @@ body {
 }
 
 /* Hidden preview until user chooses to view it */
-.payload-preview.hidden { display: none; }
+.payload-preview.hidden {
+  display: none;
+}
 
-.payload-toggle { margin-top:10px; background: transparent; border: none; color: #2042da; cursor: pointer; font-size: 13px; }
-.payload-toggle:hover { color: #333; }
+.payload-toggle {
+  margin-top: 10px;
+  background: transparent;
+  border: none;
+  color: #2042da;
+  cursor: pointer;
+  font-size: 13px;
+}
 
-.ext-list-item.highlight { box-shadow: 0 6px 20px rgba(232,167,106,0.18); transform:translateY(-2px); }
+.payload-toggle:hover {
+  color: #333;
+}
+
+.ext-list-item.highlight {
+  box-shadow: 0 6px 20px rgba(232, 167, 106, 0.18);
+  transform: translateY(-2px);
+}
 
 /* vertical variable list used in per-extension view */
-.var-list-vertical { list-style:none; margin:0; padding:0; display:block; }
-.var-list-vertical li { padding:8px 0; border-bottom:1px solid #f2f2f2; }
-.var-list-vertical li:last-child { border-bottom: none; }
-.var-list-vertical label { display:flex; align-items:center; gap:8px; font-size:13px; }
-.count { font-weight:600; color:#2c3e50; margin-left:6px; }
+.var-list-vertical {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+
+.var-list-vertical li {
+  padding: 8px 0;
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.var-list-vertical li:last-child {
+  border-bottom: none;
+}
+
+.var-list-vertical label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.count {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-left: 6px;
+}
 
 .ext-header {
   display: flex;
@@ -591,4 +681,76 @@ body {
 
 .description-section.hidden {
   display: none;
+}
+
+.extContainer {
+
+  height: 100%;
+}
+
+.var-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.var-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dropdown-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  color: #666;
+}
+
+.dropdown-toggle:hover {
+  color: #000;
+}
+
+.dropdown-list {
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dropdown-list.hidden {
+  display: none;
+}
+
+.dropdown-list label {
+  font-size: 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.dropdown-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.dropdown-controls button {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #2042da;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dropdown-controls button:hover {
+  text-decoration: underline;
 }
