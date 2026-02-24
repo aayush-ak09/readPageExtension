@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Read Page Sidebar</title>
   <link rel="stylesheet" href="sidebar.css">
 </head>
+
 <body>
   <div class="sidebar-container">
     <!-- Left Icon Strip (Always Visible) -->
@@ -56,6 +58,7 @@
               </div>
             </div>
 
+            <!-- ad extention form as tab  -->
             <form id="add-ext-form">
               <div class="form-group">
                 <label for="ext-name">Extension Name:</label>
@@ -65,12 +68,19 @@
               <div class="form-group">
                 <label for="ext-icon">Label (Short Name):</label>
                 <input type="text" id="ext-icon" placeholder="Auto-generated from name" maxlength="3" required>
-                <small style="color: #999; margin-top: 4px; display: block;">Auto-generated from extension name (editable)</small>
+                <small style="color: #999; margin-top: 4px; display: block;">Auto-generated from extension name
+                  (editable)</small>
               </div>
 
               <div class="form-group">
-                <label for="ext-webhook">Webhook URL:</label>
-                <input type="url" id="ext-webhook" placeholder="https://example.com/webhook" required>
+                <label for="ext-tenant-id">Flow / Tenant ID:</label>
+                <input type="text" id="ext-tenant-id" placeholder="e.g., d6457103-8285-41e7-a933-d6c0fd1c1baa" pattern="^[0-9a-fA-F-]{36}$" required>
+                <small style="color:#999; margin-top:4px; display:block;"> Paste only the Flow ID from Gapflow.</small>
+              </div>
+
+              <div class="form-group">
+                <label for="ext-description">Description:</label>
+                <input type="text" id="ext-description" placeholder="Brief description of the extension" required>
               </div>
 
               <div class="form-actions">
@@ -87,7 +97,7 @@
     </div>
   </div>
 
-  <!-- Add Extension Modal (hidden, kept for backup) -->
+  <!-- Add Extension popup (hidden, kept for backup)
   <div id="add-ext-modal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
@@ -116,7 +126,7 @@
         </div>
       </form>
     </div>
-  </div>
+  </div> -->
 
   <!-- Delete Confirmation Modal -->
   <div id="delete-modal" class="modal hidden">
@@ -135,4 +145,5 @@
 
   <script src="sidebar.js"></script>
 </body>
+
 </html>

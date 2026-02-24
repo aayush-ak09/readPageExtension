@@ -1,5 +1,8 @@
-// Regex patterns for phone and email extraction
-const PHONE_REGEX = /(?:\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|(?:\+\d{1,3}[-.\s]?)?(?:\d{1,4}[-.\s]?){2,3}\d{1,4}/g;
+// ==============================
+// Strict Phone & Email Extraction
+// ==============================
+
+// Email regex (kept same – already correct)
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 
 // Store extracted data
@@ -8,13 +11,15 @@ let extractedData = {
   emails: []
 };
 
-// Check if chrome extension context is available
+// ==============================
+// Chrome Extension Messaging
+// ==============================
+
 if (typeof chrome !== 'undefined' && chrome.runtime) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "TOGGLE_SIDEBAR") {
       toggleSidebar();
     } else if (message.type === "GET_RESULT") {
-      // Extract and return data
       const data = extractPageData();
       sendResponse(data);
     }
@@ -23,51 +28,97 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
   console.error('Chrome extension context not available');
 }
 
-// Listen for messages from iframe
+// Listen for iframe messages
 window.addEventListener("message", (event) => {
-  // Accept messages from any origin since we're controlling the iframe
   if (event.data && event.data.type === "CLOSE_SIDEBAR") {
     closeSidebar();
   }
 });
 
-// Extract phone numbers and emails from page
+// ==============================
+// Extract Page Data
+// ==============================
+
 function extractPageData() {
   try {
     const pageText = document.body.innerText;
-    
-    // Extract phones
-    const phoneMatches = pageText.match(PHONE_REGEX) || [];
-    const phones = [...new Set(phoneMatches)].filter(p => p && p.trim());
-    
-    // Extract emails
-    const emailMatches = pageText.match(EMAIL_REGEX) || [];
-    const emails = [...new Set(emailMatches)].filter(e => e && e.trim());
-    
-    console.log("Extracted data:", { phones, emails });
-    
-    return {
-      phones: phones,
-      emails: emails
-    };
+
+    const phones = extractPhoneNumbers(pageText);
+    const emails = extractEmails(pageText);
+
+    console.log("Filtered Extracted data:", { phones, emails });
+
+    return { phones, emails };
+
   } catch (error) {
     console.error('Error extracting page data:', error);
-    return {
-      phones: [],
-      emails: []
-    };
+    return { phones: [], emails: [] };
   }
 }
+
+// ==============================
+// Strict Phone Extraction Logic
+// ==============================
+
+function extractPhoneNumbers(text) {
+
+  const phonePatterns = [
+
+    // 🇮🇳 Indian Mobile (10 digits starting 6-9, optional +91)
+    /(\+91[\s-]?)?[6-9]\d{9}\b/g,
+
+    // 🇮🇳 Indian Toll Free (1800xxxxxx including 18001180 series)
+    /\b1800[\s-]?\d{3}[\s-]?\d{3}\b/g,
+
+    // 🇦🇺 Australian Numbers
+    /(\+61[\s-]?)?(0?[2-478]\d{8})\b/g,
+
+    // 🌍 Generic International (E.164 format)
+    /\+\d{8,15}\b/g
+  ];
+
+  let results = [];
+
+  phonePatterns.forEach(pattern => {
+    const matches = text.match(pattern);
+    if (matches) {
+      results.push(...matches);
+    }
+  });
+
+  // Normalize (remove spaces & dashes)
+  results = results.map(num => num.replace(/[\s-]/g, ''));
+
+  // Final strict validation
+  results = results.filter(num => {
+    const digitsOnly = num.replace(/\D/g, '');
+    return digitsOnly.length >= 10 && digitsOnly.length <= 15;
+  });
+
+  // Remove duplicates
+  return [...new Set(results)];
+}
+
+// ==============================
+// Email Extraction
+// ==============================
+
+function extractEmails(text) {
+  const emailMatches = text.match(EMAIL_REGEX) || [];
+  return [...new Set(emailMatches)].filter(e => e && e.trim());
+}
+
+// ==============================
+// Sidebar Controls
+// ==============================
 
 function closeSidebar() {
   try {
     const sidebar = document.getElementById("aayush-sidebar");
     if (sidebar) {
-      // Add fade out animation
       sidebar.style.opacity = "0";
       sidebar.style.transition = "opacity 0.3s ease-out";
-      
-      // Remove after animation completes
+
       setTimeout(() => {
         if (sidebar && sidebar.parentNode) {
           sidebar.remove();
@@ -112,13 +163,13 @@ function toggleSidebar() {
     iframe.style.transition = "opacity 0.3s ease-in";
 
     document.body.appendChild(iframe);
-    
-    // Trigger animation after adding to DOM
+
     setTimeout(() => {
       if (iframe && iframe.parentNode) {
         iframe.style.opacity = "1";
       }
     }, 10);
+
   } catch (error) {
     console.error('Error toggling sidebar:', error);
   }
