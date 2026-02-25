@@ -1,42 +1,51 @@
-chrome.action.onClicked.addListener((tab) => {
+// Open Chrome native Side Panel when extension icon is clicked
+chrome.action.onClicked.addListener(async (tab) => {
   try {
-    chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_SIDEBAR" }).catch((error) => {
-      console.error('Error sending message to tab:', error);
-    });
+    await chrome.sidePanel.open({ tabId: tab.id });
   } catch (error) {
-    console.error('Error in action click listener:', error);
+    console.error("Error opening side panel:", error);
   }
 });
+
 
 // Handle GET_RESULT message from sidebar and relay to content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   try {
     if (message.type === "GET_RESULT") {
-      // Get the active tab and send message to its content script
+
+      // Get the active tab
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs.length > 0) {
-          const activeTab = tabs[0];
-          
-          // Send message to content script of the active tab
-          chrome.tabs.sendMessage(activeTab.id, { type: "GET_RESULT" }, (response) => {
+        if (!tabs || tabs.length === 0) {
+          sendResponse({ phones: [], emails: [] });
+          return;
+        }
+
+        const activeTab = tabs[0];
+
+        // Forward request to content script
+        chrome.tabs.sendMessage(
+          activeTab.id,
+          { type: "GET_RESULT" },
+          (response) => {
+
             if (chrome.runtime.lastError) {
-              console.error('Error getting data from content script:', chrome.runtime.lastError);
+              console.error(
+                "Error getting data from content script:",
+                chrome.runtime.lastError
+              );
               sendResponse({ phones: [], emails: [] });
             } else {
               sendResponse(response || { phones: [], emails: [] });
             }
-          });
-        } else {
-          sendResponse({ phones: [], emails: [] });
-        }
+          }
+        );
       });
-      
-      // Return true to indicate we'll send the response asynchronously
+
+      // Required for async sendResponse
       return true;
     }
   } catch (error) {
-    console.error('Error handling message:', error);
+    console.error("Error handling message:", error);
     sendResponse({ phones: [], emails: [] });
   }
 });
-

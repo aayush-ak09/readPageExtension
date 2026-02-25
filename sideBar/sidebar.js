@@ -4,6 +4,7 @@ let tempExtDeleteId = null;
 // last extracted page data cached so extension views can read counts even when read-page view is hidden
 let lastPageData = { phones: [], emails: [], pageUrl: '' };
 let editingExtensionId = null;
+let currentPageData = { phones: [], emails: [] };
 
 // Load metadata when sidebar loads
 document.addEventListener("DOMContentLoaded", () => {
@@ -26,6 +27,80 @@ function loadExtensionsFromStorage(callback) {
     }
   });
 }
+
+// #region fetch data from page 
+// ==============================
+// Fetch Data From Webpage
+// ==============================
+
+function requestPageData() {
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+
+    if (!tabs.length) return;
+
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      { type: "GET_PAGE_DATA" },
+      (response) => {
+
+        if (chrome.runtime.lastError) {
+          console.warn("No content script available.");
+          return;
+        }
+
+        if (!response) return;
+
+        console.log("Received page data:", response);
+
+        // STORE DATA GLOBALLY
+        window.currentPageData = response;
+
+        // Update UI lists
+        updateReadPageView(response);
+
+        // Update payload preview if open
+        updatePayloadPreview();
+
+      }
+    );
+  });
+}
+
+
+// ==============================
+// Update Read Page UI Section
+// ==============================
+
+function updateReadPageView() {
+
+  const phoneList = document.getElementById("phones");
+  const emailList = document.getElementById("emails");
+
+  phoneList.innerHTML = "";
+  emailList.innerHTML = "";
+
+  if (currentPageData.phones.length) {
+    currentPageData.phones.forEach(phone => {
+      const li = document.createElement("li");
+      li.textContent = phone;
+      phoneList.appendChild(li);
+    });
+  } else {
+    phoneList.innerHTML = "<li>No phones found</li>";
+  }
+
+  if (currentPageData.emails.length) {
+    currentPageData.emails.forEach(email => {
+      const li = document.createElement("li");
+      li.textContent = email;
+      emailList.appendChild(li);
+    });
+  } else {
+    emailList.innerHTML = "<li>No emails found</li>";
+  }
+}
+// #endregion
 
 //#region Render extension
 function renderExtensionIcons(extensions) {
