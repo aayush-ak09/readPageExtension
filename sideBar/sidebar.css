@@ -6,7 +6,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: white;
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
   height: 100vh;
   overflow: hidden;
 }
@@ -20,14 +20,18 @@ body {
 /* Left Icon Strip */
 .icon-strip {
   width: 60px;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  background: linear-gradient(180deg, #6366F1 0%, #06B6D4 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 12px 0;
   gap: 8px;
   overflow-y: auto;
-  border-right: 1px solid #1a1a1a;
+  border-right: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 2000;
 }
 
 /* Keep icon strip visible while content scrolls */
@@ -61,9 +65,9 @@ body {
 }
 
 .icon-button.active {
-  background: linear-gradient(135deg, #e8a76a 0%, #d4927a 100%);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(232, 167, 106, 0.4);
+  background: white;
+  color: #6366F1;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
 }
 
 /* Right Main Content */
@@ -79,9 +83,12 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #e8a76a 0%, #d4927a 100%);
-  border-bottom: 1px solid #d4927a;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #6366F1 0%, #06B6D4 100%);
+  border-bottom: none;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+  position: sticky;
+  top: 0;
+  z-index: 2000;
 }
 
 /* Keep header (and close button) visible when scrolling */
@@ -140,7 +147,7 @@ body {
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
 }
 
 .section h4 {
@@ -162,7 +169,7 @@ body {
   padding: 10px 12px;
   color: #555;
   font-size: 13px;
-  border-left: 3px solid #e8a76a;
+  border-left: 3px solid #6366F1;
   padding-left: 12px;
   margin-bottom: 8px;
   background: #f8f9fa;
@@ -425,13 +432,14 @@ body {
 }
 
 .ext-trigger-btn {
-  background: linear-gradient(135deg, #e8a76a 0%, #d4927a 100%);
+  background: linear-gradient(135deg, #6366F1 0%, #06B6D4 100%);
   color: white;
   border: none;
   padding: 12px 20px;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.3px;
   cursor: pointer;
   width: 100%;
   transition: all 0.3s ease;
@@ -439,7 +447,7 @@ body {
 
 .ext-trigger-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(232, 167, 106, 0.3);
+  box-shadow: 0 6px 18px rgba(6, 182, 212, 0.35);
 }
 
 .ext-trigger-btn:active {
@@ -575,7 +583,7 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #e8a76a 0%, #d4927a 100%);
+  background: linear-gradient(135deg, #6366F1 0%, #06B6D4 100%);
   color: white;
 }
 
@@ -591,6 +599,11 @@ body {
 
 .btn-secondary:hover {
   background: #e0e0e0;
+}
+
+
+input[type="checkbox"] {
+  accent-color: #6366F1;
 }
 
 .add-ext-btn {
@@ -707,6 +720,12 @@ body {
   font-size: 14px;
   padding: 2px 6px;
   color: #666;
+}
+
+.dropdown-container {
+  border-radius: 10px;
+  background: #f9fbff;
+  border: 1px solid rgba(99, 102, 241, 0.15);
 }
 
 .dropdown-toggle:hover {

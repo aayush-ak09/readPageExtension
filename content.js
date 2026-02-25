@@ -60,45 +60,40 @@ function extractPageData() {
 // Strict Phone Extraction Logic
 // ==============================
 
-function extractPhoneNumbers(text) {
+function extractPhoneNumbers() {
 
-  const phonePatterns = [
+  const phonePattern = /(\+?\d[\d\s\-().]{8,20}\d)/g;
 
-    // 🇮🇳 Indian Mobile (10 digits starting 6-9, optional +91)
-    /(\+91[\s-]?)?[6-9]\d{9}\b/g,
+  const results = [];
 
-    // 🇮🇳 Indian Toll Free (1800xxxxxx including 18001180 series)
-    /\b1800[\s-]?\d{3}[\s-]?\d{3}\b/g,
+  // Scan text nodes individually to prevent merging
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  );
 
-    // 🇦🇺 Australian Numbers
-    /(\+61[\s-]?)?(0?[2-478]\d{8})\b/g,
+  let node;
 
-    // 🌍 Generic International (E.164 format)
-    /\+\d{8,15}\b/g
-  ];
+  while (node = walker.nextNode()) {
+    const text = node.nodeValue;
 
-  let results = [];
-
-  phonePatterns.forEach(pattern => {
-    const matches = text.match(pattern);
+    const matches = text.match(phonePattern);
     if (matches) {
-      results.push(...matches);
+      matches.forEach(num => {
+        const cleaned = num.replace(/[\s\-().]/g, '');
+        const digits = cleaned.replace(/\D/g, '');
+
+        if (digits.length >= 10 && digits.length <= 15) {
+          results.push(cleaned);
+        }
+      });
     }
-  });
+  }
 
-  // Normalize (remove spaces & dashes)
-  results = results.map(num => num.replace(/[\s-]/g, ''));
-
-  // Final strict validation
-  results = results.filter(num => {
-    const digitsOnly = num.replace(/\D/g, '');
-    return digitsOnly.length >= 10 && digitsOnly.length <= 15;
-  });
-
-  // Remove duplicates
   return [...new Set(results)];
 }
-
 // ==============================
 // Email Extraction
 // ==============================
