@@ -79,34 +79,25 @@ function renderExtensionIcons(extensions) {
         <div class="section">
           <h4>Variables</h4>
           <ul class="var-list-vertical">
-            <li><label><input type="checkbox" class="var-checkbox" data-var="pageUrl" checked> Page URL</label></li>
             <li class="var-group">
               <div class="var-header">
                <label>
                  <input type="checkbox" class="var-checkbox" data-var="phones" checked>Phones (<span class="count phones-count" data-ext-id="${ext.id}">0</span>)
                </label>
-              
                 <button type="button" class="dropdown-toggle" data-type="phones" data-ext-id="${ext.id}">⌄</button>
              </div>
-
              <div class="dropdown-list hidden"id="phones-dropdown-${ext.id}"></div>
             </li>
-            
             <li class="var-group">
               <div class="var-header">
                 <label>
                   <input type="checkbox" class="var-checkbox" data-var="emails" checked>
                   Emails (<span class="count emails-count" data-ext-id="${ext.id}">0</span>)
                 </label>
-
                 <button type="button"class="dropdown-toggle"data-type="emails"data-ext-id="${ext.id}">⌄</button>
               </div>
-
               <div class="dropdown-list hidden" id="emails-dropdown-${ext.id}"></div>
-            </li>
-            
-            <li><label><input type="checkbox" class="var-checkbox" data-var="phoneCount" checked> Phone Count</label></li>
-            <li><label><input type="checkbox" class="var-checkbox" data-var="emailCount" checked> Email Count</label></li>
+            </li>            
             <li><label><input type="checkbox" class="var-checkbox" data-var="timestamps"> Timestamps</label></li>
             <li><label><input type="checkbox" class="var-checkbox" data-var="description"> Description (Optional)</label></li>
           </ul>
@@ -145,7 +136,7 @@ function renderExtensionIcons(extensions) {
     const first = extensions[0];
     switchView(first.id, first.name);
   } else {
-    switchView('read-page', 'Read Page');
+    switchView('read-page', 'Page Properties');
   }
 
   // ============================
@@ -295,7 +286,7 @@ function setupAddExtensionModal() {
     editingExtensionId = null;
 
     document.querySelector("#add-ext-form button[type='submit']").textContent = "Add Extension";
-    switchView("read-page", "Read Page");
+    switchView("read-page", "Page Properties");
   });
 
   form.addEventListener("submit", (e) => {
@@ -421,7 +412,7 @@ function addNewExtension() {
           "#add-ext-form button[type='submit']"
         ).textContent = "Add Extension";
         loadExtensionsFromStorage(() => {
-          switchView("read-page", "Read Page");
+          switchView("read-page", "Page Properties");
         });
       }
     );
@@ -437,7 +428,7 @@ function deleteExtension(extId) {
     chrome.storage.local.set({ [EXTENSIONS_STORAGE_KEY]: extensions }, () => {
       console.log("Extension deleted:", extId);
       loadExtensionsFromStorage();
-      switchView("read-page", "Read Page");
+      switchView("read-page", "Page Properties");
     });
   });
 }
@@ -503,7 +494,7 @@ async function triggerWebhook(extId) {
     }
 
     const dataObj = {};
-    if (checkedVars.pageUrl) dataObj.pageUrl = window.location.href;
+    // if (checkedVars.pageUrl) dataObj.pageUrl = window.location.href;
     if (checkedVars.timestamps) dataObj.timestamps = new Date().toISOString();
     if (checkedVars.phones) {
       const selectedPhones = [];
@@ -533,7 +524,7 @@ async function triggerWebhook(extId) {
       extensionName: extension.name,
       extensionIcon: extension.icon,
       sentAt: new Date().toISOString(),
-      pageUrl: window.location.href,
+      // pageUrl: window.location.href,
       data: dataObj
     };
 
@@ -594,9 +585,9 @@ function updatePreviewForExtension(extId) {
     temp.phones.forEach(phone => {
       const label = document.createElement("label");
       label.innerHTML = `
-      <input type="checkbox" class="phone-item" value="${phone}" checked>
-      ${phone}
-    `;
+    <input type="checkbox" class="phone-item" value="${phone}">
+    ${phone}
+  `;
       phonesDropdown.appendChild(label);
     });
 
@@ -640,7 +631,7 @@ function updatePreviewForExtension(extId) {
     temp.emails.forEach(email => {
       const label = document.createElement("label");
       label.innerHTML = `
-      <input type="checkbox" class="email-item" value="${email}" checked>
+      <input type="checkbox" class="email-item" value="${email}">
       ${email}
     `;
       emailsDropdown.appendChild(label);
@@ -716,17 +707,21 @@ function updatePreviewForExtension(extId) {
   if (previewEl)
     previewEl.textContent = JSON.stringify(preview, null, 2);
 
-  /* =========================================
-     Update Counts
-  ========================================= */
+
+  // ===== Update Selected Counts =====
+
   const phonesCountEl = view.querySelector(`.phones-count[data-ext-id="${extId}"]`);
   const emailsCountEl = view.querySelector(`.emails-count[data-ext-id="${extId}"]`);
 
-  if (phonesCountEl)
-    phonesCountEl.textContent = temp.phones.length;
+  if (phonesCountEl) {
+    const selectedPhones = view.querySelectorAll('.phone-item:checked').length;
+    phonesCountEl.textContent = selectedPhones;
+  }
 
-  if (emailsCountEl)
-    emailsCountEl.textContent = temp.emails.length;
+  if (emailsCountEl) {
+    const selectedEmails = view.querySelectorAll('.email-item:checked').length;
+    emailsCountEl.textContent = selectedEmails;
+  }
 }
 // Show trigger status
 function showStatus(extId, type, message) {
@@ -781,7 +776,7 @@ function setupIconNavigation() {
 
   if (readPageBtn) {
     readPageBtn.addEventListener("click", () => {
-      switchView("read-page", "Read Page");
+      switchView("read-page", "Page Properties");
     });
   }
 }

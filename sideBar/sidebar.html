@@ -10,123 +10,121 @@
 
 <body>
   <div class="sidebar-container">
-    <!-- Left Icon Strip (Always Visible) -->
+
+    <!-- Left Icon Strip -->
     <div class="icon-strip">
-      <div class="icon-button active" data-view="read-page" title="Read Page">📄</div>
-      <div id="extensions-container"></div>
       <div class="icon-button add-ext-btn" data-view="add-extension" title="Add Extension">+</div>
+      <div class="icon-button active" data-view="read-page" title="Page Properties">📄</div>
+      <div id="extensions-container"></div>
     </div>
 
     <!-- Right Main Content -->
     <div class="main-content">
+
       <div class="header">
-        <h3 id="content-title">Read Page</h3>
+        <h3 id="content-title">Page Properties</h3>
         <div class="header-actions">
           <button id="close" class="close-btn">×</button>
         </div>
       </div>
 
+      <!-- CONTENT WRAPPER (Now flex-based) -->
       <div class="content">
+
         <!-- Read Page View -->
         <div class="content-view active" data-view="read-page">
-          <div class="section">
-            <h4>📞 Phone Numbers</h4>
-            <ul id="phones">
-              <li>No phones found</li>
-            </ul>
-          </div>
+          <div class="ext-scroll-area">
 
-          <div class="section">
-            <h4>📧 Email Addresses</h4>
-            <ul id="emails">
-              <li>No emails found</li>
-            </ul>
-          </div>
+            <div class="section">
+              <h4>📞 Phone Numbers</h4>
+              <ul id="phones">
+                <li>No phones found</li>
+              </ul>
+            </div>
 
-          <div class="info-box">
-            <p>💡 Data from this page will be sent to any extension you trigger below.</p>
+            <div class="section">
+              <h4>📧 Email Addresses</h4>
+              <ul id="emails">
+                <li>No emails found</li>
+              </ul>
+            </div>
+
+            <div class="info-box">
+              <p>💡 Data from this page will be sent to any extension you trigger below.</p>
+            </div>
+
           </div>
         </div>
 
         <!-- Add Extension View -->
         <div class="content-view" data-view="add-extension">
           <div class="ext-card">
-            <div class="ext-header">
-              <div class="ext-title">
-                <span class="ext-icon-large">➕</span>
-                <span>Add New Extension</span>
+
+            <div class="ext-scroll-area">
+
+              <div class="ext-header">
+                <div class="ext-title">
+                  <span class="ext-icon-large">➕</span>
+                  <span>Add New Extension</span>
+                </div>
+              </div>
+
+              <form id="add-ext-form">
+
+                <div class="form-group">
+                  <label for="ext-name">Extension Name:</label>
+                  <input type="text" id="ext-name" placeholder="e.g., My Tool" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="ext-icon">Label (Short Name):</label>
+                  <input type="text" id="ext-icon" placeholder="Auto-generated from name" maxlength="3" required>
+                  <small style="color: #999; margin-top: 4px; display: block;">
+                    Auto-generated from extension name (editable)
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label for="ext-tenant-id">Flow ID:</label>
+                  <input type="text" id="ext-tenant-id"
+                    placeholder="e.g., d6457103-8285-41e7-a933-d6c0fd1c1baa"
+                    pattern="^[0-9a-fA-F-]{36}$" required>
+                  <small style="color:#999; margin-top:4px; display:block;">
+                    Paste only the Flow ID from Gapflow.
+                  </small>
+                </div>
+
+                <div class="form-group">
+                  <label for="ext-description">Description:</label>
+                  <input type="text" id="ext-description"
+                    placeholder="Brief description of the extension" required>
+                </div>
+
+              </form>
+
+            </div>
+
+            <!-- Bottom Fixed Area -->
+            <div class="ext-bottom-actions">
+              <div class="form-actions">
+                <button type="submit" form="add-ext-form" class="btn-primary">
+                  Add Extension
+                </button>
+                <button type="button" class="btn-secondary" id="cancel-add-ext">
+                  Cancel
+                </button>
               </div>
             </div>
 
-            <!-- ad extention form as tab  -->
-            <form id="add-ext-form">
-              <div class="form-group">
-                <label for="ext-name">Extension Name:</label>
-                <input type="text" id="ext-name" placeholder="e.g., My Tool" required>
-              </div>
-
-              <div class="form-group">
-                <label for="ext-icon">Label (Short Name):</label>
-                <input type="text" id="ext-icon" placeholder="Auto-generated from name" maxlength="3" required>
-                <small style="color: #999; margin-top: 4px; display: block;">Auto-generated from extension name
-                  (editable)</small>
-              </div>
-
-              <div class="form-group">
-                <label for="ext-tenant-id">Flow / Tenant ID:</label>
-                <input type="text" id="ext-tenant-id" placeholder="e.g., d6457103-8285-41e7-a933-d6c0fd1c1baa" pattern="^[0-9a-fA-F-]{36}$" required>
-                <small style="color:#999; margin-top:4px; display:block;"> Paste only the Flow ID from Gapflow.</small>
-              </div>
-
-              <div class="form-group">
-                <label for="ext-description">Description:</label>
-                <input type="text" id="ext-description" placeholder="Brief description of the extension" required>
-              </div>
-
-              <div class="form-actions">
-                <button type="submit" class="btn-primary">Add Extension</button>
-                <button type="button" class="btn-secondary" id="cancel-add-ext">Cancel</button>
-              </div>
-            </form>
           </div>
         </div>
 
-        <!-- Dynamic Extensions Views -->
+        <!-- Dynamic Extension Views -->
         <div id="dynamic-views-container" class="extContainer"></div>
+
       </div>
     </div>
   </div>
-
-  <!-- Add Extension popup (hidden, kept for backup)
-  <div id="add-ext-modal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Add New Extension</h2>
-        <button class="modal-close">×</button>
-      </div>
-      <form id="add-ext-form">
-        <div class="form-group">
-          <label for="ext-name">Extension Name:</label>
-          <input type="text" id="ext-name" placeholder="e.g., My Tool" required>
-        </div>
-
-        <div class="form-group">
-          <label for="ext-icon">Icon (emoji or text):</label>
-          <input type="text" id="ext-icon" placeholder="e.g., 🔧" maxlength="3" value="🔆" required>
-        </div>
-
-        <div class="form-group">
-          <label for="ext-webhook">Webhook URL:</label>
-          <input type="url" id="ext-webhook" placeholder="https://example.com/webhook" required>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">Add Extension</button>
-          <button type="button" class="btn-secondary modal-close">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div> -->
 
   <!-- Delete Confirmation Modal -->
   <div id="delete-modal" class="modal hidden">
@@ -135,7 +133,10 @@
         <h2>Delete Extension</h2>
         <button class="modal-close">×</button>
       </div>
-      <p id="delete-message" style="padding: 20px; text-align: center; color: #666;">Are you sure?</p>
+      <p id="delete-message"
+        style="padding: 20px; text-align: center; color: #666;">
+        Are you sure?
+      </p>
       <div class="form-actions" style="padding: 0 20px 20px;">
         <button id="confirm-delete" class="btn-primary">Delete</button>
         <button type="button" class="btn-secondary modal-close">Cancel</button>
