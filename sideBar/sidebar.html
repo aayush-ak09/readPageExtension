@@ -87,8 +87,7 @@
                 <div class="form-group">
                   <label for="ext-tenant-id">Flow ID:</label>
                   <input type="text" id="ext-tenant-id"
-                    placeholder="e.g., d6457103-8285-41e7-a933-d6c0fd1c1baa"
-                    pattern="^[0-9a-fA-F-]{36}$" required>
+                    pattern="^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$" required>
                   <small style="color:#999; margin-top:4px; display:block;">
                     Paste only the Flow ID from Gapflow.
                   </small>
@@ -96,20 +95,18 @@
 
                 <div class="form-group">
                   <label for="ext-description">Description:</label>
-                  <input type="text" id="ext-description"
-                    placeholder="Brief description of the extension" required>
+                  <input type="text" id="ext-description" placeholder="Brief description of the extension" required>
                 </div>
 
               </form>
+              <div id="form-status" class="form-status"></div>
 
             </div>
 
             <!-- Bottom Fixed Area -->
             <div class="ext-bottom-actions">
               <div class="form-actions">
-                <button type="submit" form="add-ext-form" class="btn-primary">
-                  Add Extension
-                </button>
+                <button type="submit" form="add-ext-form" id="ext-submit-btn" class="btn-primary">Add Extension</button>
                 <button type="button" class="btn-secondary" id="cancel-add-ext">
                   Cancel
                 </button>
@@ -133,8 +130,7 @@
         <h2>Delete Extension</h2>
         <button class="modal-close">×</button>
       </div>
-      <p id="delete-message"
-        style="padding: 20px; text-align: center; color: #666;">
+      <p id="delete-message" style="padding: 20px; text-align: center; color: #666;">
         Are you sure?
       </p>
       <div class="form-actions" style="padding: 0 20px 20px;">

@@ -121,7 +121,7 @@ function renderExtensionIcons(extensions) {
       
               <button class="ext-trigger-btn" data-ext-id="${ext.id}">📤 Send Data to ${ext.name}</button>
       
-              <div class="trigger-status"></div>
+              <div class="trigger-status" id="status-${ext.id}"></div>
           </div>
        </div>
     `;
@@ -132,12 +132,7 @@ function renderExtensionIcons(extensions) {
   // ============================
   // DEFAULT VIEW
   // ============================
-  if (extensions.length > 0) {
-    const first = extensions[0];
-    switchView(first.id, first.name);
-  } else {
-    switchView('read-page', 'Page Properties');
-  }
+  switchView('read-page', 'Page Properties');
 
   // ============================
   // EXISTING LISTENERS (UNCHANGED)
@@ -236,16 +231,24 @@ function renderExtensionIcons(extensions) {
 
 // #region openEdit extention form 
 function openEditExtension(extId) {
+
   chrome.storage.local.get([EXTENSIONS_STORAGE_KEY], function (result) {
+
     const extensions = result[EXTENSIONS_STORAGE_KEY] || [];
     const ext = extensions.find(e => e.id === extId);
 
-    if (!ext) return;
+    if (!ext) {
+      console.warn("Extension not found:", extId);
+      return;
+    }
 
+    // Set editing mode
     editingExtensionId = extId;
 
-    // Switch to Add Extension view
+    // Switch to Add/Edit view
     switchView("add-extension", "Edit Extension");
+
+    // Extract Flow ID from webhook
     let tenantId = "";
 
     try {
@@ -255,56 +258,106 @@ function openEditExtension(extId) {
       console.warn("Invalid webhook format:", ext.webhook);
     }
 
+    // Wait one tick to ensure view is rendered
+    setTimeout(() => {
 
-    // Fill form
-    document.getElementById("ext-name").value = ext.name;
-    document.getElementById("ext-icon").value = ext.icon;
-    document.getElementById("ext-tenant-id").value = tenantId;
-    document.getElementById("ext-description").value = ext.description || "";
+      // Fill form fields
+      const nameInput = document.getElementById("ext-name");
+      const iconInput = document.getElementById("ext-icon");
+      const tenantInput = document.getElementById("ext-tenant-id");
+      const descInput = document.getElementById("ext-description");
 
-    // Change button text
-    document.querySelector("#add-ext-form button[type='submit']").textContent = "Update Extension";
+      if (nameInput) nameInput.value = ext.name || "";
+      if (iconInput) iconInput.value = ext.icon || "";
+      if (tenantInput) tenantInput.value = tenantId || "";
+      if (descInput) descInput.value = ext.description || "";
+
+      // Change submit button text
+      const submitBtn = document.getElementById("ext-submit-btn");
+      if (submitBtn) {
+        submitBtn.textContent = "Update Extension";
+      }
+
+    }, 0);
+
   });
 }
 // #endregion
 
 // Add extension inline form functionality
 function setupAddExtensionModal() {
+
   const form = document.getElementById("add-ext-form");
   const addBtn = document.querySelector(".add-ext-btn");
   const cancelBtn = document.getElementById("cancel-add-ext");
   const nameInput = document.getElementById("ext-name");
   const iconInput = document.getElementById("ext-icon");
+  const submitBtn = document.getElementById("ext-submit-btn");
 
+  // ===============================
+  // ➕ Add Extension Button Click
+  // ===============================
   addBtn.addEventListener("click", () => {
+
+    // Clear editing mode
+    editingExtensionId = null;
+
+    // Reset form
+    if (form) form.reset();
+
+    // Reset submit button text
+    if (submitBtn) {
+      submitBtn.textContent = "Add Extension";
+    }
+
     switchView("add-extension", "Add New Extension");
   });
 
+  // ===============================
+  // ❌ Cancel Button Click
+  // ===============================
   cancelBtn.addEventListener("click", (e) => {
+
     e.preventDefault();
-    form.reset();
+
+    // Reset editing mode
     editingExtensionId = null;
 
-    document.querySelector("#add-ext-form button[type='submit']").textContent = "Add Extension";
+    // Reset form
+    if (form) form.reset();
+
+    // Reset submit button text
+    if (submitBtn) {
+      submitBtn.textContent = "Add Extension";
+    }
+
     switchView("read-page", "Page Properties");
   });
 
+  // ===============================
+  // 📨 Form Submit
+  // ===============================
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     addNewExtension();
   });
 
-  // Auto-generate label from extension name
+  // ===============================
+  // 🔤 Auto-generate Label from Name
+  // ===============================
   if (nameInput && iconInput) {
-    nameInput.addEventListener('input', (e) => {
+    nameInput.addEventListener("input", (e) => {
+
       const name = e.target.value.trim();
+
       if (name.length >= 2) {
-        // Get first two letters and convert to uppercase
-        const abbreviation = name.substring(0, 2).toUpperCase();
-        iconInput.value = abbreviation;
+        iconInput.value = name.substring(0, 2).toUpperCase();
       } else if (name.length === 1) {
         iconInput.value = name.toUpperCase();
+      } else {
+        iconInput.value = "";
       }
+
     });
   }
 }
@@ -313,13 +366,24 @@ function setupAddExtensionModal() {
 function setupDeleteModal() {
   const modal = document.getElementById("delete-modal");
   const confirmBtn = document.getElementById("confirm-delete");
+  const closeBtns = document.querySelectorAll(".modal-close");
 
-  confirmBtn.addEventListener("click", () => {
-    if (tempExtDeleteId) {
-      deleteExtension(tempExtDeleteId);
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", () => {
+      if (tempExtDeleteId) {
+        deleteExtension(tempExtDeleteId);
+        tempExtDeleteId = null;
+      }
+      modal.classList.add("hidden");
+    });
+  }
+
+  // Handle Cancel and X
+  closeBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
       tempExtDeleteId = null;
-    }
-    modal.classList.add("hidden");
+      modal.classList.add("hidden");
+    });
   });
 }
 
@@ -331,6 +395,21 @@ function openDeleteModal(extId, extName) {
   message.textContent = `Are you sure you want to delete "${extName}"?`;
   modal.classList.remove("hidden");
 }
+
+function showFormStatus(type, message) {
+  const el = document.getElementById("form-status");
+  if (!el) return;
+
+  el.className = `form-status ${type}`;
+  el.textContent = message;
+
+  setTimeout(() => {
+    el.textContent = "";
+    el.className = "form-status";
+  }, 4000);
+}
+
+
 
 // Add new extension to storage
 function addNewExtension() {
@@ -363,7 +442,7 @@ function addNewExtension() {
     );
 
     if (duplicate) {
-      alert("This Flow ID is already added.");
+      showFormStatus("error", "This Flow ID is already added.");
       return;
     }
 
@@ -408,9 +487,10 @@ function addNewExtension() {
       { [EXTENSIONS_STORAGE_KEY]: extensions },
       () => {
         document.getElementById("add-ext-form").reset();
-        document.querySelector(
-          "#add-ext-form button[type='submit']"
-        ).textContent = "Add Extension";
+        const submitBtn = document.querySelector("#add-ext-form button[type='submit']");
+        if (submitBtn) {
+          submitBtn.textContent = "Add Extension";
+        }
         loadExtensionsFromStorage(() => {
           switchView("read-page", "Page Properties");
         });
@@ -511,8 +591,6 @@ async function triggerWebhook(extId) {
       });
       dataObj.emails = selectedEmails;
     }
-    if (checkedVars.phoneCount) dataObj.phoneCount = temp.phones.length;
-    if (checkedVars.emailCount) dataObj.emailCount = temp.emails.length;
     if (checkedVars.description) {
       const descInput = document.getElementById(`desc-input-${extId}`);
       const description = descInput ? descInput.value.trim() : '';
@@ -524,7 +602,6 @@ async function triggerWebhook(extId) {
       extensionName: extension.name,
       extensionIcon: extension.icon,
       sentAt: new Date().toISOString(),
-      // pageUrl: window.location.href,
       data: dataObj
     };
 
@@ -551,89 +628,78 @@ async function triggerWebhook(extId) {
   });
 }
 
-// Build and update preview for an extension from its selected checkboxes
-function updatePreviewForExtension(extId) {
+
+function initializeDropdowns(extId) {
 
   const view = document.querySelector(`.content-view[data-view="${extId}"]`);
   if (!view) return;
 
   const temp = getTemporaryData();
 
-  const checkedVars = {};
-  view.querySelectorAll('.var-checkbox').forEach(cb => {
-    checkedVars[cb.getAttribute('data-var')] = cb.checked;
-  });
-  /* =========================================
-    Populate Phones Dropdown (Only Once)
- ========================================= */
+  // ===========================
+  // PHONES
+  // ===========================
   const phonesDropdown = document.getElementById(`phones-dropdown-${extId}`);
-  if (phonesDropdown && phonesDropdown.dataset.initialized !== "true" && temp.phones && temp.phones.length > 0) {
+  if (phonesDropdown && !phonesDropdown.dataset.initialized) {
 
     phonesDropdown.dataset.initialized = "true";
-    phonesDropdown.innerHTML = "";
 
-    // Controls
     const controls = document.createElement("div");
     controls.className = "dropdown-controls";
     controls.innerHTML = `
-    <button type="button" class="select-all-phones">Select All</button>
-    <button type="button" class="deselect-all-phones">Deselect All</button>
-  `;
+      <button type="button" class="select-all-phones">Select All</button>
+      <button type="button" class="deselect-all-phones">Deselect All</button>
+    `;
     phonesDropdown.appendChild(controls);
 
-    // Items
     temp.phones.forEach(phone => {
       const label = document.createElement("label");
       label.innerHTML = `
-    <input type="checkbox" class="phone-item" value="${phone}">
-    ${phone}
-  `;
+        <input type="checkbox" class="phone-item" value="${phone}">
+        ${phone}
+      `;
       phonesDropdown.appendChild(label);
     });
 
-    // Select All
     controls.querySelector('.select-all-phones').addEventListener('click', () => {
       phonesDropdown.querySelectorAll('.phone-item').forEach(cb => cb.checked = true);
       updatePreviewForExtension(extId);
     });
 
-    // Deselect All
     controls.querySelector('.deselect-all-phones').addEventListener('click', () => {
       phonesDropdown.querySelectorAll('.phone-item').forEach(cb => cb.checked = false);
       updatePreviewForExtension(extId);
     });
 
-    // Individual checkbox change
     phonesDropdown.addEventListener('change', (e) => {
       if (e.target.classList.contains('phone-item')) {
         updatePreviewForExtension(extId);
       }
     });
   }
-  /* =========================================
-    Populate Emails Dropdown (Only Once)
- ========================================= */
-  const emailsDropdown = document.getElementById(`emails-dropdown-${extId}`);
 
-  if (emailsDropdown && emailsDropdown.dataset.initialized !== "true" && temp.emails && temp.emails.length > 0) {
+  // ===========================
+  // EMAILS
+  // ===========================
+  const emailsDropdown = document.getElementById(`emails-dropdown-${extId}`);
+  if (emailsDropdown && !emailsDropdown.dataset.initialized) {
 
     emailsDropdown.dataset.initialized = "true";
-    emailsDropdown.innerHTML = "";
 
     const controls = document.createElement("div");
     controls.className = "dropdown-controls";
     controls.innerHTML = `
-    <button type="button" class="select-all-emails">Select All</button>
-    <button type="button" class="deselect-all-emails">Deselect All</button>
-  `;
+      <button type="button" class="select-all-emails">Select All</button>
+      <button type="button" class="deselect-all-emails">Deselect All</button>
+    `;
     emailsDropdown.appendChild(controls);
 
     temp.emails.forEach(email => {
       const label = document.createElement("label");
       label.innerHTML = `
-      <input type="checkbox" class="email-item" value="${email}">
-      ${email}
-    `;
+        <input type="checkbox" class="email-item" value="${email}">
+        ${email}
+      `;
       emailsDropdown.appendChild(label);
     });
 
@@ -653,16 +719,38 @@ function updatePreviewForExtension(extId) {
       }
     });
   }
-  /* =========================================
-     Build Payload Data (Using Selected Items)
-  ========================================= */
+}
+
+
+
+// Build and update preview for an extension from its selected checkboxes
+function updatePreviewForExtension(extId) {
+
+  const view = document.querySelector(`.content-view[data-view="${extId}"]`);
+  if (!view) return;
+
+  const temp = getTemporaryData();
+
+  // ================================
+  // Read Selected Main Variables
+  // ================================
+  const checkedVars = {};
+  view.querySelectorAll('.var-checkbox').forEach(cb => {
+    checkedVars[cb.getAttribute('data-var')] = cb.checked;
+  });
+
+  // ================================
+  // Build Payload Data
+  // ================================
   const dataObj = {};
 
-  if (checkedVars.pageUrl)
+  if (checkedVars.pageUrl) {
     dataObj.pageUrl = window.location.href;
+  }
 
-  if (checkedVars.timestamps)
+  if (checkedVars.timestamps) {
     dataObj.timestamps = new Date().toISOString();
+  }
 
   if (checkedVars.phones) {
     const selectedPhones = [];
@@ -680,22 +768,27 @@ function updatePreviewForExtension(extId) {
     dataObj.emails = selectedEmails;
   }
 
-  if (checkedVars.phoneCount)
-    dataObj.phoneCount = (dataObj.phones || temp.phones).length;
+  if (checkedVars.phoneCount) {
+    const count = view.querySelectorAll('.phone-item:checked').length;
+    dataObj.phoneCount = count;
+  }
 
-  if (checkedVars.emailCount)
-    dataObj.emailCount = (dataObj.emails || temp.emails).length;
+  if (checkedVars.emailCount) {
+    const count = view.querySelectorAll('.email-item:checked').length;
+    dataObj.emailCount = count;
+  }
 
   if (checkedVars.description) {
     const descInput = document.getElementById(`desc-input-${extId}`);
     const description = descInput ? descInput.value.trim() : '';
-    if (description)
+    if (description) {
       dataObj.description = description;
+    }
   }
 
-  /* =========================================
-     Preview Object
-  ========================================= */
+  // ================================
+  // Update Preview
+  // ================================
   const preview = {
     extensionId: extId,
     previewedAt: new Date().toISOString(),
@@ -704,23 +797,24 @@ function updatePreviewForExtension(extId) {
   };
 
   const previewEl = document.getElementById(`preview-${extId}`);
-  if (previewEl)
+  if (previewEl) {
     previewEl.textContent = JSON.stringify(preview, null, 2);
+  }
 
-
-  // ===== Update Selected Counts =====
-
+  // ================================
+  // Update Selected Counts in UI
+  // ================================
   const phonesCountEl = view.querySelector(`.phones-count[data-ext-id="${extId}"]`);
   const emailsCountEl = view.querySelector(`.emails-count[data-ext-id="${extId}"]`);
 
   if (phonesCountEl) {
-    const selectedPhones = view.querySelectorAll('.phone-item:checked').length;
-    phonesCountEl.textContent = selectedPhones;
+    phonesCountEl.textContent =
+      view.querySelectorAll('.phone-item:checked').length;
   }
 
   if (emailsCountEl) {
-    const selectedEmails = view.querySelectorAll('.email-item:checked').length;
-    emailsCountEl.textContent = selectedEmails;
+    emailsCountEl.textContent =
+      view.querySelectorAll('.email-item:checked').length;
   }
 }
 // Show trigger status
@@ -753,6 +847,10 @@ function switchView(viewId, title) {
   const selectedView = document.querySelector(`[data-view="${viewId}"].content-view`);
   if (selectedView) {
     selectedView.classList.add("active");
+  }
+
+  if (viewId !== "read-page" && viewId !== "add-extension") {
+    initializeDropdowns(viewId);
   }
 
   // Activate button
@@ -801,9 +899,12 @@ function closeSidebar() {
 }
 
 function loadSidebarData() {
+
   try {
-    if (!chrome || !chrome.runtime) {
-      console.warn('Chrome runtime not available in sidebar context');
+
+    // 🔒 Check if extension context is still valid
+    if (!chrome?.runtime?.id) {
+      console.warn("Extension context invalidated. Please reload extension.");
       displayEmptyState();
       return;
     }
@@ -811,8 +912,10 @@ function loadSidebarData() {
     chrome.runtime.sendMessage(
       { type: "GET_RESULT" },
       (response) => {
+
+        // 🔒 Handle runtime errors safely
         if (chrome.runtime.lastError) {
-          console.warn('Message sending error:', chrome.runtime.lastError.message);
+          console.warn("Runtime error:", chrome.runtime.lastError.message);
           displayEmptyState();
           return;
         }
@@ -821,19 +924,26 @@ function loadSidebarData() {
           displayEmptyState();
           return;
         }
-        // cache latest page data so extension views can read counts even when read-page view is hidden
+
+        // Cache latest page data
         lastPageData = response || { phones: [], emails: [], pageUrl: '' };
+
         displayData(response);
 
-        // update previews/counts for all extension views that have a preview element
+        // 🔄 Update all extension previews safely
         document.querySelectorAll('[id^="preview-"]').forEach(el => {
           const extId = el.id.replace('preview-', '');
-          try { updatePreviewForExtension(extId); } catch (e) { /* ignore */ }
+          try {
+            updatePreviewForExtension(extId);
+          } catch (err) {
+            console.warn("Preview update failed for:", extId, err);
+          }
         });
       }
     );
+
   } catch (error) {
-    console.error('Error loading sidebar data:', error);
+    console.error("Error loading sidebar data:", error);
     displayEmptyState();
   }
 }
