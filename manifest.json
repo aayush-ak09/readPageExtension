@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gapflow",
-  "description": "Trigger Gapflow automations directly from any webpage with Suitable data extracted from the webpage emails, and custom data into your workflow.",
+  "description": "Trigger Gapflow automations from any webpage by extracting emails, phone numbers, and custom data into your workflow.",
   "version": "3.0.5",
   "icons": {
     "16": "icons/icon16.png",
