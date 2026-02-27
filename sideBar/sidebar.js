@@ -37,9 +37,6 @@ function renderExtensionIcons(extensions) {
 
   extensions.forEach((ext) => {
 
-    // ============================
-    // ICON BUTTON
-    // ============================
     const btn = document.createElement("div");
     btn.className = "icon-button";
     btn.setAttribute("data-view", ext.id);
@@ -48,9 +45,6 @@ function renderExtensionIcons(extensions) {
     btn.addEventListener("click", () => switchView(ext.id, ext.name));
     container.appendChild(btn);
 
-    // ============================
-    // EXTENSION VIEW
-    // ============================
     const view = document.createElement("div");
     view.className = "content-view";
     view.setAttribute("data-view", ext.id);
@@ -75,7 +69,6 @@ function renderExtensionIcons(extensions) {
             ${ext.description}
           </div>
         ` : ""}
-
         <div class="section">
           <h4>Variables</h4>
           <ul class="var-list-vertical">
@@ -102,7 +95,6 @@ function renderExtensionIcons(extensions) {
             <li><label><input type="checkbox" class="var-checkbox" data-var="description"> Description (Optional)</label></li>
           </ul>
         </div>
-
         <div class="section description-section hidden" id="desc-section-${ext.id}">
           <label for="desc-input-${ext.id}" class="section-label">📝 Description:</label>
           <textarea id="desc-input-${ext.id}" 
@@ -113,31 +105,17 @@ function renderExtensionIcons(extensions) {
             <span id="char-count-${ext.id}">0</span>/500
           </span>
         </div>
-
           <div class="ext-bottom-actions">
               <button class="payload-toggle" data-ext-id="${ext.id}">View payload...</button>
-              
               <div class="payload-preview hidden" id="preview-${ext.id}"></div>
-      
               <button class="ext-trigger-btn" data-ext-id="${ext.id}">📤 Send Data to ${ext.name}</button>
-      
               <div class="trigger-status" id="status-${ext.id}"></div>
           </div>
        </div>
     `;
-
     viewsContainer.appendChild(view);
   });
-
-  // ============================
-  // DEFAULT VIEW
-  // ============================
   switchView('read-page', 'Page Properties');
-
-  // ============================
-  // EXISTING LISTENERS (UNCHANGED)
-  // ============================
-
   document.querySelectorAll(".ext-delete-btn").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -294,9 +272,6 @@ function setupAddExtensionModal() {
   const iconInput = document.getElementById("ext-icon");
   const submitBtn = document.getElementById("ext-submit-btn");
 
-  // ===============================
-  // ➕ Add Extension Button Click
-  // ===============================
   addBtn.addEventListener("click", () => {
 
     // Clear editing mode
@@ -313,20 +288,14 @@ function setupAddExtensionModal() {
     switchView("add-extension", "Add New Extension");
   });
 
-  // ===============================
-  // ❌ Cancel Button Click
-  // ===============================
   cancelBtn.addEventListener("click", (e) => {
 
     e.preventDefault();
 
-    // Reset editing mode
     editingExtensionId = null;
 
-    // Reset form
     if (form) form.reset();
 
-    // Reset submit button text
     if (submitBtn) {
       submitBtn.textContent = "Add Extension";
     }
@@ -334,17 +303,11 @@ function setupAddExtensionModal() {
     switchView("read-page", "Page Properties");
   });
 
-  // ===============================
-  // 📨 Form Submit
-  // ===============================
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     addNewExtension();
   });
 
-  // ===============================
-  // 🔤 Auto-generate Label from Name
-  // ===============================
   if (nameInput && iconInput) {
     nameInput.addEventListener("input", (e) => {
 
@@ -435,7 +398,6 @@ function addNewExtension() {
   chrome.storage.local.get([EXTENSIONS_STORAGE_KEY], (result) => {
     let extensions = result[EXTENSIONS_STORAGE_KEY] || [];
 
-    // 🚨 Prevent duplicate tenant IDs (except when editing same one)
     const duplicate = extensions.find(ext =>
       ext.tenantId === tenantId &&
       ext.id !== editingExtensionId
@@ -447,9 +409,6 @@ function addNewExtension() {
     }
 
     if (editingExtensionId) {
-      // =========================
-      // UPDATE MODE
-      // =========================
       extensions = extensions.map(ext => {
         if (ext.id === editingExtensionId) {
           return {
@@ -468,9 +427,6 @@ function addNewExtension() {
       editingExtensionId = null;
 
     } else {
-      // =========================
-      // CREATE MODE
-      // =========================
       const newExt = {
         id: "ext_" + Date.now(),
         name,
