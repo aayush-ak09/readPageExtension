@@ -1,10 +1,18 @@
 // utils/utilService.js
 
 // Cache holder (must be shared)
-let lastPageData = { phones: [], emails: [], pageUrl: '' };
+let lastPageData = {
+  phones: { all: [], unique: [] },
+  emails: { all: [], unique: [] },
+  pageUrl: ''
+};
 
 export function setLastPageData(data) {
-  lastPageData = data || { phones: [], emails: [], pageUrl: '' };
+  lastPageData = data || {
+    phones: { all: [], unique: [] },
+    emails: { all: [], unique: [] },
+    pageUrl: ''
+  };
 }
 
 export function getLastPageData() {
@@ -17,20 +25,24 @@ export function getTemporaryData() {
   const emailList = document.getElementById("emails");
 
   if (phoneList || emailList) {
-    const phones = [];
-    const emails = [];
+    const phones = { all: [], unique: [] };
+    const emails = { all: [], unique: [] };
 
     phoneList?.querySelectorAll("li").forEach(li => {
       const text = li.textContent.trim();
-      if (text && text !== "No phones found") phones.push(text);
+      if (text && text !== "No phones found") phones.unique.push(text);
     });
 
     emailList?.querySelectorAll("li").forEach(li => {
       const text = li.textContent.trim();
-      if (text && text !== "No emails found") emails.push(text);
+      if (text && text !== "No emails found") emails.unique.push(text);
     });
 
-    return { phones, emails, pageUrl: lastPageData.pageUrl };
+    return {
+      phones: { ...lastPageData.phones, unique: phones.unique },
+      emails: { ...lastPageData.emails, unique: emails.unique },
+      pageUrl: lastPageData.pageUrl
+    };
   }
 
   return lastPageData;
@@ -46,8 +58,8 @@ export function displayData(data) {
   phoneList.innerHTML = "";
   emailList.innerHTML = "";
 
-  if (data?.phones?.length) {
-    data.phones.forEach(phone => {
+  if (data?.phones?.unique?.length) {
+    data.phones.unique.forEach(phone => {
       const li = document.createElement("li");
       li.textContent = phone;
       phoneList.appendChild(li);
@@ -56,8 +68,8 @@ export function displayData(data) {
     phoneList.innerHTML = "<li>No phones found</li>";
   }
 
-  if (data?.emails?.length) {
-    data.emails.forEach(email => {
+  if (data?.emails?.unique?.length) {
+    data.emails.unique.forEach(email => {
       const li = document.createElement("li");
       li.textContent = email;
       emailList.appendChild(li);

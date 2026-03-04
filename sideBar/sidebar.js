@@ -5,7 +5,11 @@ import { initFlowForm, openEditExtension } from "./Form/flowForm.js";
 const EXTENSIONS_STORAGE_KEY = "readPageExtensions";
 let tempExtDeleteId = null;
 // last extracted page data cached so extension views can read counts even when read-page view is hidden
-let lastPageData = { phones: [], emails: [], pageUrl: '' };
+let lastPageData = {
+  phones: { all: [], unique: [] },
+  emails: { all: [], unique: [] },
+  pageUrl: ''
+};
 // Load metadata when sidebar loads
 document.addEventListener("DOMContentLoaded", () => {
   loadExtensionsFromStorage();
@@ -182,7 +186,7 @@ function initializeDropdowns(extId) {
     `;
     phonesDropdown.appendChild(controls);
 
-    temp.phones.forEach(phone => {
+    temp.phones.unique.forEach(phone => {
       const label = document.createElement("label");
       label.innerHTML = `
         <input type="checkbox" class="phone-item" value="${phone}">
@@ -224,7 +228,7 @@ function initializeDropdowns(extId) {
     `;
     emailsDropdown.appendChild(controls);
 
-    temp.emails.forEach(email => {
+    temp.emails.unique.forEach(email => {
       const label = document.createElement("label");
       label.innerHTML = `
         <input type="checkbox" class="email-item" value="${email}">
@@ -300,12 +304,12 @@ function updatePreviewForExtension(extId) {
 
   if (checkedVars.phoneCount) {
     const count = view.querySelectorAll('.phone-item:checked').length;
-    dataObj.phoneCount = count;
+    dataObj.phoneCount = `${count}/${temp.phones.unique.length}`;
   }
 
   if (checkedVars.emailCount) {
     const count = view.querySelectorAll('.email-item:checked').length;
-    dataObj.emailCount = count;
+    dataObj.emailCount = `${count}/${temp.emails.unique.length}`;
   }
 
   if (checkedVars.description) {
@@ -335,16 +339,18 @@ function updatePreviewForExtension(extId) {
   // Update Selected Counts in UI
   // ================================
   const phonesCountEl = view.querySelector(`.phones-count[data-flow-id="${extId}"]`);
-
   const emailsCountEl = view.querySelector(`.emails-count[data-flow-id="${extId}"]`);
+
   if (phonesCountEl) {
-    phonesCountEl.textContent =
-      view.querySelectorAll('.phone-item:checked').length;
+    const selectedCount = view.querySelectorAll('.phone-item:checked').length;
+    const totalCount = temp.phones.unique.length;
+    phonesCountEl.textContent = `${selectedCount}/${totalCount}`;
   }
 
   if (emailsCountEl) {
-    emailsCountEl.textContent =
-      view.querySelectorAll('.email-item:checked').length;
+    const selectedCount = view.querySelectorAll('.email-item:checked').length;
+    const totalCount = temp.emails.unique.length;
+    emailsCountEl.textContent = `${selectedCount}/${totalCount}`;
   }
 }
 

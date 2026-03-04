@@ -43,16 +43,40 @@ function extractPageData() {
   try {
     const pageText = document.body.innerText;
 
-    const phones = extractPhoneNumbers(pageText);
-    const emails = extractEmails(pageText);
+    const allPhones = extractPhoneNumbers(pageText, false);
+    const uniquePhones = [...new Set(allPhones)];
 
-    console.log("Filtered Extracted data:", { phones, emails });
+    const allEmails = extractEmails(pageText, false);
+    const uniqueEmails = [...new Set(allEmails)];
 
-    return { phones, emails };
+    console.log("Extracted data:", {
+      phones: {
+        all: allPhones,
+        unique: uniquePhones
+      },
+      emails: {
+        all: allEmails,
+        unique: uniqueEmails
+      }
+    });
+
+    return {
+      phones: {
+        all: allPhones,
+        unique: uniquePhones
+      },
+      emails: {
+        all: allEmails,
+        unique: uniqueEmails
+      }
+    };
 
   } catch (error) {
     console.error('Error extracting page data:', error);
-    return { phones: [], emails: [] };
+    return {
+      phones: { all: [], unique: [] },
+      emails: { all: [], unique: [] }
+    };
   }
 }
 
@@ -60,7 +84,7 @@ function extractPageData() {
 // Strict Phone Extraction Logic
 // ==============================
 
-function extractPhoneNumbers() {
+function extractPhoneNumbers(text, unique = true) {
 
   const phonePattern = /(\+?\d[\d\s\-().]{8,20}\d)/g;
 
@@ -92,15 +116,22 @@ function extractPhoneNumbers() {
     }
   }
 
-  return [...new Set(results)];
+  if (unique) {
+    return [...new Set(results)];
+  }
+
+  return results;
 }
 // ==============================
 // Email Extraction
 // ==============================
 
-function extractEmails(text) {
+function extractEmails(text, unique = true) {
   const emailMatches = text.match(EMAIL_REGEX) || [];
-  return [...new Set(emailMatches)].filter(e => e && e.trim());
+  if (unique) {
+    return [...new Set(emailMatches)].filter(e => e && e.trim());
+  }
+  return emailMatches.filter(e => e && e.trim());
 }
 
 // ==============================
