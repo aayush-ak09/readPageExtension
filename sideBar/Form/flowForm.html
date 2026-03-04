@@ -1,0 +1,46 @@
+<div class="ext-card">
+  <div class="ext-scroll-area">
+    <div class="ext-header">
+      <div class="ext-title">
+        <span class="ext-icon-large">➕</span>
+        <span id="form-title">Add New Extension</span>
+      </div>
+    </div>
+    <form id="add-ext-form">
+      <div class="form-group">
+        <label for="ext-name">Extension Name:</label>
+        <input type="text" id="ext-name" required>
+      </div>
+      <div class="form-group">
+        <label for="ext-icon">Label (Short Name):</label>
+        <input type="text" id="ext-icon" maxlength="3" required>
+      </div>
+      <div class="form-group">
+        <label for="ext-tenant-id">Flow ID:</label>
+        <input type="text" id="ext-tenant-id"
+          pattern="^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$" required>
+      </div>
+      <div class="form-group">
+        <label for="ext-description">Description:</label>
+        <textarea id="ext-description" maxlength="500" rows="4"
+          placeholder="Brief description of this extension (max 500 characters)" required>
+        </textarea>
+        <small class="char-count">
+          <span id="desc-count">0</span>/500
+        </small>
+      </div>
+    </form>
+    <div id="form-status" class="form-status"></div>
+  </div>
+  <!-- Bottom Fixed Area -->
+  <div class="ext-bottom-actions">
+    <div class="form-actions">
+      <button type="submit" form="add-ext-form" id="ext-submit-btn" class="btn-primary">
+        Add Extension
+      </button>
+      <button type="button" class="btn-secondary" id="cancel-add-ext">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>

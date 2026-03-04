@@ -394,7 +394,7 @@ body {
   font-size: 32px;
 }
 
-.ext-delete-btn {
+.flow-delete-btn {
   background: #ff6b6b;
   color: white;
   border: none;
@@ -409,7 +409,7 @@ body {
   transition: all 0.2s ease;
 }
 
-.ext-delete-btn:hover {
+.flow-delete-btn:hover {
   background: #ff5252;
   transform: scale(1.05);
 }
@@ -430,7 +430,7 @@ body {
   margin-bottom: 4px;
 }
 
-.ext-trigger-btn {
+.flow-trigger-btn {
   background: linear-gradient(135deg, #6366F1 0%, #06B6D4 100%);
   color: white;
   border: none;
@@ -444,12 +444,12 @@ body {
   transition: all 0.3s ease;
 }
 
-.ext-trigger-btn:hover {
+.flow-trigger-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(6, 182, 212, 0.35);
 }
 
-.ext-trigger-btn:active {
+.flow-trigger-btn:active {
   transform: translateY(0);
 }
 
