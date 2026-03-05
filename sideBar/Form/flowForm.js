@@ -1,8 +1,10 @@
 let editingExtensionId = null;
 let switchViewRef = null;
+let loadExtensionsRef = null;
 
-export function initFlowForm(switchViewFn) {
+export function initFlowForm(switchViewFn, loadExtensionsFn) {
   switchViewRef = switchViewFn;
+  loadExtensionsRef = loadExtensionsFn;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -109,9 +111,13 @@ function handleSubmit() {
         document.getElementById("ext-submit-btn").textContent = "Add Extension";
         const title = document.getElementById("form-title");
         if (title) title.textContent = "Add New Extension";
-        loadExtensionsFromStorage(() => {
-          switchView("read-page", "Page Properties");
-        });
+        if (loadExtensionsRef) {
+          loadExtensionsRef(() => {
+            if (switchViewRef) {
+              switchViewRef("read-page", "Page Properties");
+            }
+          });
+        }
       }
     );
   });

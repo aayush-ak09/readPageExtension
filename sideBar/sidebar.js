@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSidebarData();
   setupCloseButton();
   setupDeleteModal();
-  initFlowForm(switchView);
+  initFlowForm(switchView, loadExtensionsFromStorage);
   setupIconNavigation();
 });
 
