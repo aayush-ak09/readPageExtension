@@ -11,6 +11,19 @@ body {
   overflow: hidden;
 }
 
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* controls spacing between icon and title */
+}
+
+.header-title h2,
+.header-title h3 {
+  margin: 0;
+  /* removes default spacing */
+}
+
 .sidebar-container {
   display: flex;
   height: 100vh;
@@ -136,14 +149,14 @@ body {
   flex: 1;
   display: flex;
   overflow: hidden;
-  padding: 20px;
+  padding: 5px;
 }
 
 .section {
   background: white;
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
+  max-height: 100%;
+  margin-bottom: 20px;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
 }
 
@@ -181,7 +194,8 @@ body {
 .content-view {
   display: none;
   flex-direction: column;
-  height: 100%;;
+  height: 100%;
+  ;
 }
 
 .content-view.active {
@@ -228,22 +242,41 @@ body {
   line-height: 1.5;
 }
 
+.payload-preview {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
 .ext-card {
   padding: 20px;
+  padding-bottom: 140px;
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 85%;
   border-radius: 18px;
   background: #ffffff;
   box-shadow:
     0 4px 6px rgba(0, 0, 0, 0.05),
     0 10px 20px rgba(0, 0, 0, 0.06),
     0 20px 40px rgba(0, 0, 0, 0.04);
+  overflow-y: auto;
 }
 
 .ext-bottom-actions {
-  margin-top: auto;
-  padding-top: 20px;
+  position: fixed;
+  bottom: 0;
+  left: 60px;
+  /* because your icon strip is 60px */
+  right: 0;
+  padding: 14px 18px;
+  background: #ffffff;
+  border-top: 1px solid #eee;
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.08);
+  z-index: 3000;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* List view styles for extensions */
@@ -333,6 +366,7 @@ body {
   color: #2042da;
   cursor: pointer;
   font-size: 13px;
+  text-align: left
 }
 
 .payload-toggle:hover {
@@ -394,8 +428,7 @@ body {
   font-size: 32px;
 }
 
-.flow-delete-btn {
-  background: #ff6b6b;
+.flowActionBTN {
   color: white;
   border: none;
   width: 32px;
@@ -409,8 +442,19 @@ body {
   transition: all 0.2s ease;
 }
 
-.flow-delete-btn:hover {
+.delete {
   background: #ff5252;
+}
+
+.edit {
+  background: #3e3e3e;
+}
+
+.refresh {
+  background: #3e3e3e;
+}
+
+.flowActionBTN:hover {
   transform: scale(1.05);
 }
 

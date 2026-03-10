@@ -99,3 +99,8 @@ export function showStatus(extId, type, message) {
     statusEl.classList.remove("success", "error");
   }, 4000);
 }
+
+export function getExtensionById(extId, extensions) {
+  if (!Array.isArray(extensions)) return null;
+  return extensions.find(ext => ext.id === extId) || null;
+}

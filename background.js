@@ -1,26 +1,46 @@
 chrome.action.onClicked.addListener((tab) => {
   try {
-    chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_SIDEBAR" }).catch((error) => {
-      console.error('Error sending message to tab:', error);
+    chrome.sidePanel.open({
+      windowId: tab.windowId
     });
   } catch (error) {
-    console.error('Error in action click listener:', error);
+    console.error("Error opening side panel:", error);
   }
 });
 
 // Handle GET_RESULT message from sidebar and relay to content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   try {
+    if (message.type === "CLOSE_SIDEPANEL") {
+      if (sender.tab && sender.tab.id) {
+        chrome.sidePanel.setOptions({
+          tabId: sender.tab.id,
+          enabled: false
+        });
+      }
+      return;
+    }
+    if (message.type === "RESCAN_PAGE") {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(
+          tabs[0].id,
+          { type: "SCAN_PAGE" },
+          (response) => {
+            sendResponse(response);
+          }
+        );
+      });
+      return true;
+    }
+
+
     if (message.type === "GET_RESULT") {
-      // Get the active tab and send message to its content script
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length > 0) {
           const activeTab = tabs[0];
-          
-          // Send message to content script of the active tab
           chrome.tabs.sendMessage(activeTab.id, { type: "GET_RESULT" }, (response) => {
             if (chrome.runtime.lastError) {
-              console.error('Error getting data from content script:', chrome.runtime.lastError);
+              console.error("Error getting data from content script:", chrome.runtime.lastError);
               sendResponse({ phones: [], emails: [] });
             } else {
               sendResponse(response || { phones: [], emails: [] });
@@ -30,13 +50,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ phones: [], emails: [] });
         }
       });
-      
-      // Return true to indicate we'll send the response asynchronously
       return true;
     }
   } catch (error) {
-    console.error('Error handling message:', error);
+    console.error("Error handling message:", error);
     sendResponse({ phones: [], emails: [] });
   }
 });
-

@@ -1,15 +1,10 @@
-import { getTemporaryData, displayData, displayEmptyState, showStatus, setLastPageData } from "./utils/utilService.js";
+import { getTemporaryData, displayData, displayEmptyState, showStatus, setLastPageData, getExtensionById } from "./utils/utilService.js";
 import { renderFlows } from "./Flows/render.js";
 import { initFlowForm, openEditExtension } from "./Form/flowForm.js";
 // Storage key for extensions
 const EXTENSIONS_STORAGE_KEY = "readPageExtensions";
 let tempExtDeleteId = null;
-// last extracted page data cached so extension views can read counts even when read-page view is hidden
-let lastPageData = {
-  phones: { all: [], unique: [] },
-  emails: { all: [], unique: [] },
-  pageUrl: ''
-};
+let extensionsCache = [];
 // Load metadata when sidebar loads
 document.addEventListener("DOMContentLoaded", () => {
   loadExtensionsFromStorage();
@@ -18,22 +13,25 @@ document.addEventListener("DOMContentLoaded", () => {
   setupDeleteModal();
   initFlowForm(switchView, loadExtensionsFromStorage);
   setupIconNavigation();
+
+  const refreshBtn = document.getElementById("refreshPageBtn");
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", refreshPageScan);
+  }
 });
 
 // Load extensions from chrome storage and render them
 function loadExtensionsFromStorage(callback) {
   chrome.storage.local.get([EXTENSIONS_STORAGE_KEY], (result) => {
-    const extensions = result[EXTENSIONS_STORAGE_KEY] || [];
-    renderFlows(extensions, switchView, openDeleteModal, (extId) => openEditExtension(extId, switchView), updatePreviewForExtension);
-    if (callback && typeof callback === 'function') {
-      callback();
+    extensionsCache = result[EXTENSIONS_STORAGE_KEY] || [];
+    console.log("Loaded extensions:", extensionsCache);
+    renderFlows(extensionsCache, switchView, openDeleteModal, (extId) => openEditExtension(extId, switchView), updatePreviewForExtension);
+    if (typeof callback === "function") {
+      callback(extensionsCache);
     }
   });
 }
-
-
-// Add extension inline form functionality
-
 
 // Delete modal setup
 function setupDeleteModal() {
@@ -71,97 +69,89 @@ function openDeleteModal(extId, extName) {
 
 // Delete extension
 function deleteExtension(extId) {
-  chrome.storage.local.get([EXTENSIONS_STORAGE_KEY], (result) => {
-    let extensions = result[EXTENSIONS_STORAGE_KEY] || [];
-    extensions = extensions.filter(ext => ext.id !== extId);
-
-    chrome.storage.local.set({ [EXTENSIONS_STORAGE_KEY]: extensions }, () => {
-      console.log("Extension deleted:", extId);
-      loadExtensionsFromStorage();
+  extensionsCache = extensionsCache.filter(ext => ext.id !== extId);
+  chrome.storage.local.set(
+    { [EXTENSIONS_STORAGE_KEY]: extensionsCache },
+    () => {
+      renderFlows(extensionsCache, switchView, openDeleteModal, (extId) => openEditExtension(extId, switchView), updatePreviewForExtension);
       switchView("read-page", "Page Properties");
-    });
-  });
+    }
+  );
 }
 
-
-// Create payload and send to webhook
-async function triggerWebhook(extId) {
-  chrome.storage.local.get([EXTENSIONS_STORAGE_KEY], async (result) => {
-    const extensions = result[EXTENSIONS_STORAGE_KEY] || [];
-    const extension = extensions.find(e => e.id === extId);
-
-    if (!extension) {
-      showStatus(extId, "error", "Extension not found");
+function refreshPageScan() {
+  try {
+    if (!chrome?.runtime?.id) {
       return;
     }
 
-    // Get data
-    const temp = getTemporaryData();
+    chrome.runtime.sendMessage(
+      { type: "RESCAN_PAGE" },
+      (response) => {
 
-    // Read selected vars from the extension's content view checkboxes
-    const view = document.querySelector(`.content-view[data-view="${extId}"]`);
-    const checkedVars = {};
-    if (view) {
-      view.querySelectorAll('.var-checkbox').forEach(cb => {
-        checkedVars[cb.getAttribute('data-var')] = cb.checked;
-      });
-    }
+        if (chrome.runtime.lastError) {
+          return;
+        }
 
-    const dataObj = {};
-    // if (checkedVars.pageUrl) dataObj.pageUrl = window.location.href;
-    if (checkedVars.timestamps) dataObj.timestamps = new Date().toISOString();
-    if (checkedVars.phones) {
-      const selectedPhones = [];
-      view.querySelectorAll('.phone-item:checked').forEach(cb => {
-        selectedPhones.push(cb.value);
-      });
-      dataObj.phones = selectedPhones;
-    }
+        // reload sidebar data after scan
+        loadSidebarData();
+        updatePhoneEmailLists()
+        renderFlows(extensionsCache, switchView, openDeleteModal, (extId) => openEditExtension(extId, switchView), updatePreviewForExtension);
+        switchView("read-page", "Page Properties");
 
-    if (checkedVars.emails) {
-      const selectedEmails = [];
-      view.querySelectorAll('.email-item:checked').forEach(cb => {
-        selectedEmails.push(cb.value);
-      });
-      dataObj.emails = selectedEmails;
-    }
-    if (checkedVars.description) {
-      const descInput = document.getElementById(`desc-input-${extId}`);
-      const description = descInput ? descInput.value.trim() : '';
-      if (description) dataObj.description = description;
-    }
-
-    const payload = {
-      extensionId: extension.id,
-      extensionName: extension.name,
-      extensionIcon: extension.icon,
-      sentAt: new Date().toISOString(),
-      data: dataObj
-    };
-
-    // update preview
-    const previewEl = document.getElementById(`preview-${extId}`);
-    if (previewEl) previewEl.textContent = JSON.stringify(payload, null, 2);
-
-    try {
-      const response = await fetch(extension.webhook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        showStatus(extId, "success", "✅ Data sent successfully!");
-      } else {
-        showStatus(extId, "error", `❌ Error: ${response.status}`);
+        showStatus(chrome.runtime.id, "success", "Page rescan complete");
       }
-    } catch (error) {
-      showStatus(extId, "error", `❌ Error: ${error.message}`);
-      console.error("Webhook error:", error);
-    }
-  });
+    );
+
+  } catch (err) {
+    console.error("Refresh scan failed:", err);
+  }
 }
 
+function updatePhoneEmailLists(flowId) {
+
+  const data = getTemporaryData(); // phones + emails from scan
+
+  const phones = data?.phones || [];
+  const emails = data?.emails || [];
+
+  const phoneDropdown = document.getElementById(`phones-dropdown-${flowId}`);
+  const emailDropdown = document.getElementById(`emails-dropdown-${flowId}`);
+
+  const phoneCount = document.querySelector(`.phones-count[data-flow-id="${flowId}"]`);
+  const emailCount = document.querySelector(`.emails-count[data-flow-id="${flowId}"]`);
+
+  if (!phoneDropdown || !emailDropdown) return;
+
+  // clear old items
+  phoneDropdown.innerHTML = "";
+  emailDropdown.innerHTML = "";
+
+  // update counts
+  if (phoneCount) phoneCount.textContent = phones.length;
+  if (emailCount) emailCount.textContent = emails.length;
+
+  // render phones
+  phones.forEach(phone => {
+    const item = document.createElement("label");
+    item.innerHTML = `
+      <input type="checkbox" class="phone-item" value="${phone}" checked>
+      ${phone}
+    `;
+    phoneDropdown.appendChild(item);
+  });
+
+  // render emails
+  emails.forEach(email => {
+    const item = document.createElement("label");
+    item.innerHTML = `
+      <input type="checkbox" class="email-item" value="${email}" checked>
+      ${email}
+    `;
+    emailDropdown.appendChild(item);
+  });
+
+}
 
 function initializeDropdowns(extId) {
 
@@ -382,13 +372,47 @@ function switchView(viewId, title) {
     selectedBtn.classList.add("active");
   }
 
-  // Update title
-  document.getElementById("content-title").textContent = title;
-
-  // Load data if it's the read-page view
   if (viewId === "read-page") {
     loadSidebarData();
+    document.getElementById("contentHeader").innerHTML =
+      ` <h3>Page Properties</h3>
+      <div class="header-actions">
+        <button class="flowActionBTN refresh" id="refreshClick">⟲</button>
+      </div>`;
+  } else if (viewId === "add-extension") {
+    document.getElementById("contentHeader").innerHTML = ` <h3>Add New Flow </h3>`;
+  } else {
+    const ext = getExtensionById(viewId, extensionsCache);
+
+    document.getElementById("contentHeader").innerHTML =
+      `<div class="header-title">
+          <h2>${ext?.icon || ""}</h2>
+          <h3>${title}</h3>
+          </div>
+          <div class="header-actions">
+            <button class="flowActionBTN refresh" id="refreshClick">⟲</button>
+            <button class="flowActionBTN edit" id="editClick">✏️</button>
+            <button class="flowActionBTN delete" id="deleteClick">🗑️</button>
+          </div>`;
   }
+  const editBtn = document.getElementById("editClick");
+  if (editBtn) {
+    editBtn.addEventListener("click", () => {
+      openEditExtension(viewId, switchView);
+    });
+  }
+
+  const deleteBtn = document.getElementById("deleteClick");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", () => {
+      openDeleteModal(viewId, ext?.name || "Flow");
+    });
+  }
+  const refreshBtn = document.getElementById("refreshClick");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", refreshPageScan);
+  }
+
 }
 
 // Original navigation setup
@@ -412,12 +436,11 @@ function setupCloseButton() {
     };
   }
 }
-
 function closeSidebar() {
   try {
-    window.parent.postMessage({ type: "CLOSE_SIDEBAR" }, "*");
+    chrome.runtime.sendMessage({ type: "CLOSE_SIDEPANEL" });
   } catch (error) {
-    console.error('Error closing sidebar:', error);
+    console.error("Error requesting side panel close:", error);
   }
 }
 
@@ -427,7 +450,6 @@ function loadSidebarData() {
 
     // 🔒 Check if extension context is still valid
     if (!chrome?.runtime?.id) {
-      console.warn("Extension context invalidated. Please reload extension.");
       displayEmptyState();
       return;
     }

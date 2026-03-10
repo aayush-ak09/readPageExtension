@@ -33,18 +33,6 @@ export function renderFlows(
 
         view.innerHTML = `
       <div class="ext-card">
-
-        <div class="ext-header">
-          <div class="ext-title">
-            <span class="ext-icon-large">${flow.icon}</span>
-            <span>${flow.name}</span>
-          </div>
-          <div style="display:flex; gap:8px;">
-            <button class="flow-edit-btn" data-flow-id="${flow.id}">✏️</button>
-            <button class="flow-delete-btn" data-flow-id="${flow.id}" data-name="${flow.name}">🗑️</button>
-          </div>
-        </div>
-
         ${flow.description ? `
           <div class="extension-description"
                style="margin:8px 0 15px;font-size:13px;color:#666;">
@@ -95,7 +83,6 @@ export function renderFlows(
                 Description (Optional)
               </label>
             </li>
-
           </ul>
         </div>
 
